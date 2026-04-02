@@ -139,6 +139,13 @@
       "email": "peternnamani001@gmail.com",
       "enrolledDate": "2026-03-29T17:57:07.583Z",
       "progress": 0
+    },
+    {
+      "userId": "28fae099-0970-4dcf-9e5b-7de5a4b1b1d0",
+      "courseId": "course-008",
+      "email": "peternnamani001@gmail.com",
+      "enrolledDate": "2026-04-02T13:33:58.169Z",
+      "progress": 0
     }
   ]
 }
