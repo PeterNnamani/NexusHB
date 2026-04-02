@@ -1,0 +1,419 @@
+{
+  "courses": [
+    {
+      "id": "course-001",
+      "title": "Introduction to Web Development",
+      "description": "Learn the fundamentals of web development including HTML, CSS, and JavaScript",
+      "category": "Web Development",
+      "instructor": "John Doe",
+      "price": 5000,
+      "earningsPotential": 8000,
+      "image": "https://via.placeholder.com/400x300?text=Web+Development",
+      "level": "Beginner",
+      "duration": "8 weeks",
+      "rating": 4.8,
+      "students": 1250,
+      "lessons": 24,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "HTML Basics",
+          "videos": [
+            {
+              "id": "vid-001-1",
+              "title": "Getting Started with HTML",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "15:30"
+            },
+            {
+              "id": "vid-001-2",
+              "title": "HTML Tags and Elements",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "18:45"
+            }
+          ],
+          "duration": "2 hours"
+        },
+        {
+          "week": 2,
+          "topic": "CSS Styling",
+          "videos": [
+            {
+              "id": "vid-001-3",
+              "title": "CSS Selectors and Properties",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "22:15"
+            },
+            {
+              "id": "vid-001-4",
+              "title": "Box Model and Layout",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "20:30"
+            }
+          ],
+          "duration": "3 hours"
+        },
+        {
+          "week": 3,
+          "topic": "JavaScript Fundamentals",
+          "videos": [
+            {
+              "id": "vid-001-5",
+              "title": "Variables and Data Types",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "25:00"
+            },
+            {
+              "id": "vid-001-6",
+              "title": "Functions and Control Flow",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "28:15"
+            }
+          ],
+          "duration": "4 hours"
+        }
+      ]
+    },
+    {
+      "id": "course-002",
+      "title": "Advanced React Mastery",
+      "description": "Master advanced React concepts and build scalable applications",
+      "category": "Frontend",
+      "instructor": "Jane Smith",
+      "price": 8500,
+      "earningsPotential": 12000,
+      "image": "https://via.placeholder.com/400x300?text=React+Advanced",
+      "level": "Intermediate",
+      "duration": "10 weeks",
+      "rating": 4.9,
+      "students": 890,
+      "lessons": 32,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "React Hooks",
+          "videos": [
+            {
+              "id": "vid-002-1",
+              "title": "useState and useEffect",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "30:00"
+            },
+            {
+              "id": "vid-002-2",
+              "title": "Custom Hooks",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "25:45"
+            }
+          ],
+          "duration": "3 hours"
+        },
+        {
+          "week": 2,
+          "topic": "State Management",
+          "videos": [
+            {
+              "id": "vid-002-3",
+              "title": "Context API",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "28:30"
+            },
+            {
+              "id": "vid-002-4",
+              "title": "Redux Basics",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "32:15"
+            }
+          ],
+          "duration": "4 hours"
+        },
+        {
+          "week": 3,
+          "topic": "Performance Optimization",
+          "videos": [
+            {
+              "id": "vid-002-5",
+              "title": "Code Splitting and Lazy Loading",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "22:00"
+            }
+          ],
+          "duration": "2.5 hours"
+        }
+      ]
+    },
+    {
+      "id": "course-003",
+      "title": "Python for Data Science",
+      "description": "Learn Python programming for data analysis and visualization",
+      "category": "Data Science",
+      "instructor": "Mike Johnson",
+      "price": 6500,
+      "earningsPotential": 10000,
+      "image": "https://via.placeholder.com/400x300?text=Python+Data+Science",
+      "level": "Intermediate",
+      "duration": "12 weeks",
+      "rating": 4.7,
+      "students": 2100,
+      "lessons": 40,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "Python Basics",
+          "videos": [
+            {
+              "id": "vid-003-1",
+              "title": "Python Installation and Setup",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "20:15"
+            },
+            {
+              "id": "vid-003-2",
+              "title": "Variables and Data Types",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "18:45"
+            }
+          ],
+          "duration": "4 hours"
+        },
+        {
+          "week": 2,
+          "topic": "NumPy & Pandas",
+          "videos": [
+            {
+              "id": "vid-003-3",
+              "title": "NumPy Arrays and Operations",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "32:30"
+            },
+            {
+              "id": "vid-003-4",
+              "title": "Pandas DataFrames",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "28:15"
+            }
+          ],
+          "duration": "5 hours"
+        },
+        {
+          "week": 3,
+          "topic": "Data Visualization",
+          "videos": [
+            {
+              "id": "vid-003-5",
+              "title": "Matplotlib and Seaborn",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "25:00"
+            }
+          ],
+          "duration": "3 hours"
+        }
+      ]
+    },
+    {
+      "id": "course-004",
+      "title": "UI/UX Design Fundamentals",
+      "description": "Learn to create beautiful and user-friendly digital experiences",
+      "category": "Design",
+      "instructor": "Peter Nnamani",
+      "price": 4500,
+      "earningsPotential": 6000,
+      "image": "https://via.placeholder.com/400x300?text=UI+UX+Design",
+      "level": "Beginner",
+      "duration": "6 weeks",
+      "rating": 4.6,
+      "students": 1540,
+      "lessons": 18,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "Design Principles",
+          "videos": [
+            {
+              "id": "vid-004-1",
+              "title": "Color Theory",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "18:00"
+            },
+            {
+              "id": "vid-004-2",
+              "title": "Typography Basics",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "16:30"
+            }
+          ],
+          "duration": "2.5 hours"
+        },
+        {
+          "week": 2,
+          "topic": "Wireframing & Prototyping",
+          "videos": [
+            {
+              "id": "vid-004-3",
+              "title": "Introduction to Figma",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "24:15"
+            },
+            {
+              "id": "vid-004-4",
+              "title": "Creating Wireframes",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "20:00"
+            }
+          ],
+          "duration": "3 hours"
+        },
+        {
+          "week": 3,
+          "topic": "User Research",
+          "videos": [
+            {
+              "id": "vid-004-5",
+              "title": "User Testing Methods",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "19:30"
+            }
+          ],
+          "duration": "2 hours"
+        }
+      ]
+    },
+    {
+      "id": "course-005",
+      "title": "Node.js Backend Development",
+      "description": "Build scalable backend applications with Node.js and Express",
+      "category": "Backend",
+      "instructor": "David Brown",
+      "price": 7500,
+      "earningsPotential": 11000,
+      "image": "https://via.placeholder.com/400x300?text=Node.js+Backend",
+      "level": "Intermediate",
+      "duration": "10 weeks",
+      "rating": 4.8,
+      "students": 1100,
+      "lessons": 28,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "Node.js Fundamentals",
+          "videos": [
+            {
+              "id": "vid-005-1",
+              "title": "Node.js Runtime",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "22:00"
+            },
+            {
+              "id": "vid-005-2",
+              "title": "NPM and Packages",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "18:45"
+            }
+          ],
+          "duration": "3 hours"
+        },
+        {
+          "week": 2,
+          "topic": "Express & Routing",
+          "videos": [
+            {
+              "id": "vid-005-3",
+              "title": "Setting up Express Server",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "25:30"
+            },
+            {
+              "id": "vid-005-4",
+              "title": "Route Handling",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "20:15"
+            }
+          ],
+          "duration": "4 hours"
+        },
+        {
+          "week": 3,
+          "topic": "Database Integration",
+          "videos": [
+            {
+              "id": "vid-005-5",
+              "title": "MongoDB Basics",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "28:00"
+            }
+          ],
+          "duration": "3.5 hours"
+        }
+      ]
+    },
+    {
+      "id": "course-006",
+      "title": "Mobile App Development with Flutter",
+      "description": "Create beautiful cross-platform mobile applications",
+      "category": "Mobile Development",
+      "instructor": "Emily Garcia",
+      "price": 9000,
+      "earningsPotential": 15000,
+      "image": "https://via.placeholder.com/400x300?text=Flutter+Mobile",
+      "level": "Intermediate",
+      "duration": "12 weeks",
+      "rating": 4.7,
+      "students": 750,
+      "lessons": 35,
+      "syllabus": [
+        {
+          "week": 1,
+          "topic": "Flutter Setup & Widgets",
+          "videos": [
+            {
+              "id": "vid-006-1",
+              "title": "Flutter Installation",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "20:30"
+            },
+            {
+              "id": "vid-006-2",
+              "title": "Widget Basics",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "26:15"
+            }
+          ],
+          "duration": "3.5 hours"
+        },
+        {
+          "week": 2,
+          "topic": "State Management",
+          "videos": [
+            {
+              "id": "vid-006-3",
+              "title": "StatefulWidget",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "24:00"
+            },
+            {
+              "id": "vid-006-4",
+              "title": "Provider Package",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "27:45"
+            }
+          ],
+          "duration": "4 hours"
+        },
+        {
+          "week": 3,
+          "topic": "Networking & APIs",
+          "videos": [
+            {
+              "id": "vid-006-5",
+              "title": "HTTP Requests",
+              "url": "https://www.youtube.com/embed/qz0aGYrrlMU",
+              "duration": "23:30"
+            }
+          ],
+          "duration": "3 hours"
+        }
+      ]
+    }
+  ]
+}
+
