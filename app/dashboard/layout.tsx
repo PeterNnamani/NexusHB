@@ -5,16 +5,19 @@ import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { Chatbot } from "@/components/dashboard/chatbot"
-import { useAuth } from "@/contexts/auth-context"
 import { Loader2 } from "lucide-react"
+import { useAuth } from "@/contexts/auth-context"
+import { DashboardProvider } from "@/contexts/dashboard-context"
+import { normalizeRole } from "@/lib/admin"
 
 export default function DashboardLayout({
   children,
 }: {
   children: React.ReactNode
 }) {
-  const { isAuthenticated, isLoading } = useAuth()
+  const { isAuthenticated, isLoading, user } = useAuth()
   const router = useRouter()
+  const currentRole = normalizeRole(user?.role) as "student" | "tutor" | "admin"
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
@@ -42,11 +45,16 @@ export default function DashboardLayout({
       <DashboardSidebar />
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
         <DashboardHeader />
-        <main className="flex-1 p-4 lg:p-8 pt-32 lg:pt-20">
-          {children}
+        <div className="dashboard-header-offset" aria-hidden="true" />
+        <main className="dashboard-main">
+          <div className="w-full max-w-full">
+            <DashboardProvider currentRole={currentRole}>
+              {children}
+              <Chatbot />
+            </DashboardProvider>
+          </div>
         </main>
       </div>
-      <Chatbot />
     </div>
   )
 }

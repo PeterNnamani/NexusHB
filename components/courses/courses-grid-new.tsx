@@ -2,12 +2,17 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
-import { Clock, Users, Star, Grid, List } from "lucide-react"
+import { Clock, Users, Star, Grid, List, ShoppingCart, Play, PenLine, BookOpen, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
+import { canTeachCourses } from "@/lib/admin"
 import { useCart } from "@/contexts/cart-context"
+import { useToast } from "@/hooks/use-toast"
+import { getCourseImageUrl } from "@/lib/course-image"
 import { useFilter } from "@/contexts/filter-context"
+import { CoursesFilter } from "@/components/courses/courses-filter"
+import { CategoryBadge } from "@/components/category-badge"
 import {
   Select,
   SelectContent,
@@ -22,6 +27,8 @@ interface JsonCourse {
   description: string
   category: string
   instructor: string
+  instructorId?: string
+  status?: string
   price: number
   earningsPotential: number
   image: string
@@ -48,8 +55,14 @@ export function CoursesGrid() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("popular")
   const { user } = useAuth()
-  const { addToCart } = useCart()
+  const { toast } = useToast()
+  const isTutor = canTeachCourses(user?.role)
+  const { addToCart, isInCart, hydrated } = useCart()
+
+  const isOwnCourse = (course: JsonCourse) =>
+    isTutor && Boolean(user?.id && course.instructorId === user.id)
   const {
+    searchQuery,
     selectedCategories,
     selectedLevels,
     selectedPriceRanges,
@@ -57,78 +70,140 @@ export function CoursesGrid() {
   } = useFilter()
 
   useEffect(() => {
+    let cancelled = false
+    const timer = setTimeout(() => {
+      if (!cancelled) setLoading(false)
+    }, 12_000)
+
     const loadCourses = async () => {
       try {
-        const response = await fetch('/courses.json')
+        const response = await fetch("/api/courses", { cache: "no-store", credentials: "include" })
         const data = await response.json()
-        setCourses(data.courses || [])
+        if (!cancelled) setCourses(data.courses || [])
       } catch (error) {
-        console.error('Failed to load courses:', error)
+        console.error("Failed to load courses:", error)
       } finally {
-        setLoading(false)
+        if (!cancelled) setLoading(false)
+        clearTimeout(timer)
       }
     }
 
     loadCourses()
+    return () => {
+      cancelled = true
+      clearTimeout(timer)
+    }
   }, [])
 
-  // Filter courses based on selected filters
   useEffect(() => {
     let filtered = courses
 
+    if (searchQuery.trim()) {
+      const q = searchQuery.trim().toLowerCase()
+      filtered = filtered.filter(
+        (course) =>
+          course.title.toLowerCase().includes(q) ||
+          course.category.toLowerCase().includes(q) ||
+          course.instructor.toLowerCase().includes(q) ||
+          course.description?.toLowerCase().includes(q),
+      )
+    }
+
     if (selectedCategories.length > 0) {
       filtered = filtered.filter((course) =>
-        selectedCategories.includes(course.category.toLowerCase().replace(/\s+/g, '-'))
+        selectedCategories.includes(course.category.toLowerCase().replace(/\s+/g, "-")),
       )
     }
 
     if (selectedLevels.length > 0) {
       filtered = filtered.filter((course) =>
-        selectedLevels.includes(course.level.toLowerCase())
+        selectedLevels.includes(course.level.toLowerCase()),
       )
     }
 
     if (selectedPriceRanges.length > 0) {
       filtered = filtered.filter((course) =>
-        selectedPriceRanges.some((range) => matchesRange(course.price, range))
+        selectedPriceRanges.some((range) => matchesRange(course.price, range)),
       )
     }
 
     if (selectedEarningsRanges.length > 0) {
       filtered = filtered.filter((course) =>
         selectedEarningsRanges.some((range) =>
-          matchesRange(course.earningsPotential, range)
-        )
+          matchesRange(course.earningsPotential, range),
+        ),
       )
     }
 
-    setFilteredCourses(filtered)
-  }, [courses, selectedCategories, selectedLevels, selectedPriceRanges, selectedEarningsRanges])
+    const sorted = [...filtered].sort((a, b) => {
+      switch (sortBy) {
+        case "rating":
+          return b.rating - a.rating
+        case "price-low":
+          return a.price - b.price
+        case "price-high":
+          return b.price - a.price
+        default:
+          return b.students - a.students
+      }
+    })
+
+    setFilteredCourses(sorted)
+  }, [
+    courses,
+    searchQuery,
+    selectedCategories,
+    selectedLevels,
+    selectedPriceRanges,
+    selectedEarningsRanges,
+    sortBy,
+  ])
 
   const handleAddToCart = (course: JsonCourse) => {
-    addToCart({
+    const added = addToCart({
       id: course.id,
       title: course.title,
       price: course.price,
-      image: course.image,
+      image: getCourseImageUrl(course.image),
       instructor: course.instructor,
     })
+    if (added) {
+      toast({
+        title: "Added to cart",
+        description: `${course.title} — open Cart in the header to checkout.`,
+      })
+    } else {
+      toast({ title: "Already in cart", description: course.title })
+    }
   }
 
   if (loading) {
-    return <div className="text-center py-12">Loading courses...</div>
+    return (
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+        {[...Array(8)].map((_, i) => (
+          <div key={i} className="overflow-hidden rounded-xl border border-border bg-card">
+            <div className="aspect-[16/10] animate-pulse bg-muted" />
+            <div className="space-y-2 p-3">
+              <div className="h-2.5 w-1/3 animate-pulse rounded bg-muted" />
+              <div className="h-3.5 w-4/5 animate-pulse rounded bg-muted" />
+            </div>
+          </div>
+        ))}
+      </div>
+    )
   }
 
   return (
     <div>
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-        <p className="text-muted-foreground">
-          Showing <span className="font-semibold text-foreground">{filteredCourses.length}</span> courses
+      <div className="mb-4 flex min-h-9 flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <p className="min-w-[6.5rem] text-sm tabular-nums text-muted-foreground">
+          <span className="font-semibold text-foreground">{filteredCourses.length}</span>
+          {filteredCourses.length === 1 ? " course" : " courses"}
         </p>
-        <div className="flex items-center gap-4">
+        <div className="flex shrink-0 items-center gap-2">
+          <CoursesFilter />
           <Select value={sortBy} onValueChange={setSortBy}>
-            <SelectTrigger className="w-48 glass-card">
+            <SelectTrigger className="h-9 w-40 shrink-0 rounded-full border-border/80 bg-background text-xs">
               <SelectValue placeholder="Sort by" />
             </SelectTrigger>
             <SelectContent>
@@ -138,158 +213,211 @@ export function CoursesGrid() {
               <SelectItem value="price-high">Price: High to Low</SelectItem>
             </SelectContent>
           </Select>
-          <div className="flex items-center border border-border rounded-lg p-1">
+          <div className="flex items-center rounded-full border border-border/80 p-0.5">
             <Button
               variant={viewMode === "grid" ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setViewMode("grid")}
-              className="h-8 w-8"
+              className="h-7 w-7 rounded-full"
             >
-              <Grid className="h-4 w-4" />
+              <Grid className="h-3.5 w-3.5" />
             </Button>
             <Button
               variant={viewMode === "list" ? "secondary" : "ghost"}
               size="icon"
               onClick={() => setViewMode("list")}
-              className="h-8 w-8"
+              className="h-7 w-7 rounded-full"
             >
-              <List className="h-4 w-4" />
+              <List className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>
       </div>
 
-      {/* Grid View */}
-      {viewMode === "grid" ? (
-        <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-6">
-          {filteredCourses.map((course) => {
-            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
-            return (
-              <div key={course.id} className="group">
-                <div className="glass-card rounded-3xl overflow-hidden h-full flex flex-col border border-white/10 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
-                  <div className="relative aspect-5/3 overflow-hidden">
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
-                    />
-                    <Badge variant="secondary" className="absolute top-4 right-4">
-                      {course.level}
-                    </Badge>
-                  </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <span className="text-xs text-primary font-medium uppercase tracking-wider mb-2">
-                      {course.category}
-                    </span>
-                    <h3 className="font-semibold text-xl mb-3 line-clamp-2 group-hover:text-primary transition-colors">
-                      {course.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      {course.instructor}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="rounded-3xl bg-primary/5 p-3 text-sm text-primary">
-                        💰 Earn up to ₦{course.earningsPotential.toLocaleString()}
-                      </div>
-                      <div className="rounded-3xl bg-background/80 p-3 text-sm text-muted-foreground">
-                        ⭐ {course.rating} • {course.students.toLocaleString()} students
-                      </div>
-                    </div>
-                    <div className="flex flex-wrap items-center gap-4 text-sm text-muted-foreground mb-5">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {course.duration}
-                      </span>
-                    </div>
-                    <div className="mt-auto flex items-center justify-between gap-4">
-                      <span className="text-2xl font-bold">₦{course.price.toLocaleString()}</span>
-                      {isEnrolled ? (
-                        <Link href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}>
-                          <Button className="whitespace-nowrap">Continue</Button>
-                        </Link>
-                      ) : (
-                        <Button 
-                          className="whitespace-nowrap"
-                          onClick={() => handleAddToCart(course)}
-                        >
-                          Add to Cart
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
-        </div>
-      ) : (
-        /* List View */
-        <div className="space-y-4">
-          {filteredCourses.map((course) => {
-            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
-            return (
-              <div key={course.id} className="group">
-                <div className="glass-card rounded-3xl overflow-hidden flex flex-col sm:flex-row border border-white/10 shadow-sm transition-transform duration-300 hover:-translate-y-1 hover:shadow-xl">
-                  <div className="relative aspect-video sm:aspect-square sm:w-64 shrink-0 overflow-hidden bg-muted">
-                    <img
-                      src={course.image}
-                      alt={course.title}
-                      className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                    />
-                  </div>
-                  <div className="p-6 flex flex-col flex-1">
-                    <div className="flex items-center gap-3 mb-2">
-                      <Badge variant="secondary">{course.level}</Badge>
-                      <span className="text-xs text-primary font-medium uppercase tracking-wider">
-                        {course.category}
-                      </span>
-                    </div>
-                    <h3 className="font-semibold text-xl mb-2 group-hover:text-primary transition-colors">
-                      {course.title}
-                    </h3>
-                    <p className="text-sm text-muted-foreground mb-4">
-                      By {course.instructor}
-                    </p>
-                    <div className="grid grid-cols-2 gap-3 mb-4">
-                      <div className="rounded-3xl bg-primary/5 p-3 text-sm text-primary">
-                        💰 Earn up to ₦{course.earningsPotential.toLocaleString()}
-                      </div>
-                      <div className="rounded-3xl bg-background/80 p-3 text-sm text-muted-foreground">
-                        ⭐ {course.rating} • {course.students.toLocaleString()} students
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-6 text-sm text-muted-foreground mt-auto">
-                      <span className="flex items-center gap-1">
-                        <Clock className="h-4 w-4" />
-                        {course.duration}
-                      </span>
-                      <span className="flex items-center gap-1">
-                        <Users className="h-4 w-4" />
-                        {course.students.toLocaleString()} students
-                      </span>
-                    </div>
-                    <div className="mt-4 pt-4 border-t border-border flex items-center justify-between">
-                      <span className="text-2xl font-bold">₦{course.price.toLocaleString()}</span>
-                      {isEnrolled ? (
-                        <Link href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}>
-                          <Button className="rounded-full">Continue</Button>
-                        </Link>
-                      ) : (
-                        <Button 
-                          className="rounded-full"
-                          onClick={() => handleAddToCart(course)}
-                        >
-                          Add to Cart
-                        </Button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )
-          })}
+      {filteredCourses.length === 0 && (
+        <div className="rounded-xl border border-dashed border-border py-12 text-center">
+          <p className="text-muted-foreground">No courses match your filters.</p>
         </div>
       )}
+
+      {/* Grid View */}
+      {viewMode === "grid" && filteredCourses.length > 0 ? (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
+          {filteredCourses.map((course) => {
+            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
+            const ownCourse = isOwnCourse(course)
+            return (
+              <div key={course.id} className="group min-w-0">
+                <div className="flex h-full flex-col overflow-hidden rounded-xl border border-border/70 bg-card shadow-sm transition-all duration-200 hover:border-primary/35 hover:shadow-md">
+                  <div className="relative aspect-[16/10] overflow-hidden">
+                    <img
+                      src={getCourseImageUrl(course.image)}
+                      alt={course.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                    <div className="absolute left-2 top-2 flex flex-wrap gap-1">
+                      <CategoryBadge category={course.category} />
+                      {ownCourse && (
+                        <span className="rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-semibold text-foreground">
+                          Yours
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-1 flex-col gap-1 p-3">
+                    <p className="truncate text-[10px] text-muted-foreground">{course.instructor}</p>
+                    <h3 className="line-clamp-2 min-h-[2.25rem] text-xs font-semibold leading-snug transition-colors group-hover:text-primary sm:text-sm">
+                      {course.title}
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-x-2 gap-y-0.5 text-[10px] text-muted-foreground">
+                      {course.lessons > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <BookOpen className="h-3 w-3 text-primary/70" />
+                          {course.lessons}
+                        </span>
+                      )}
+                      <span className="flex items-center gap-0.5">
+                        <Users className="h-3 w-3" />
+                        {course.students.toLocaleString()}
+                      </span>
+                      {course.rating > 0 && (
+                        <span className="flex items-center gap-0.5">
+                          <Star className="h-3 w-3 fill-muted-foreground/40 text-muted-foreground" />
+                          {course.rating}
+                        </span>
+                      )}
+                    </div>
+                    <div className="mt-auto flex items-center justify-between gap-2 border-t border-border/60 pt-2">
+                      <span className="text-sm font-bold text-earn">
+                        {course.price > 0 ? `₦${course.price.toLocaleString()}` : (
+                          <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">Free</span>
+                        )}
+                      </span>
+                      {ownCourse ? (
+                        <Link href="/dashboard/my-courses?view=created" className="shrink-0">
+                          <Button size="sm" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
+                            <PenLine className="h-3 w-3" />
+                            Manage
+                          </Button>
+                        </Link>
+                      ) : isEnrolled ? (
+                        <Link
+                          href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}
+                          className="shrink-0"
+                        >
+                          <Button size="sm" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
+                            <Play className="h-3 w-3" />
+                            Continue
+                          </Button>
+                        </Link>
+                      ) : hydrated && isInCart(course.id) ? (
+                        <Link href="/dashboard/cart" className="shrink-0">
+                          <Button size="sm" variant="secondary" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
+                            <ShoppingCart className="h-3 w-3" />
+                            Cart
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button
+                          size="sm"
+                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px] font-medium"
+                          onClick={() => handleAddToCart(course)}
+                        >
+                          Start
+                          <ArrowRight className="h-3 w-3" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : filteredCourses.length > 0 ? (
+        <div className="space-y-3">
+          {filteredCourses.map((course) => {
+            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
+            const ownCourse = isOwnCourse(course)
+            return (
+              <div key={course.id} className="group">
+                <div className="flex flex-col overflow-hidden rounded-xl border border-border bg-card shadow-sm transition-all hover:border-primary/30 hover:shadow-md sm:flex-row">
+                  <div className="relative aspect-[16/10] w-full shrink-0 overflow-hidden bg-muted sm:aspect-auto sm:h-28 sm:w-44">
+                    <img
+                      src={getCourseImageUrl(course.image)}
+                      alt={course.title}
+                      className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    />
+                  </div>
+                  <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                        {ownCourse && (
+                          <Badge className="h-5 bg-primary px-1.5 text-[10px] text-primary-foreground">Yours</Badge>
+                        )}
+                        <Badge variant="secondary" className="h-5 px-1.5 text-[10px]">{course.level}</Badge>
+                        <span className="text-[10px] font-medium uppercase tracking-wide text-primary">{course.category}</span>
+                      </div>
+                      <h3 className="truncate text-sm font-semibold group-hover:text-primary sm:text-base">{course.title}</h3>
+                      <p className="truncate text-xs text-muted-foreground">{course.instructor}</p>
+                      <div className="mt-1 flex flex-wrap items-center gap-x-2 text-[11px] text-muted-foreground">
+                        <span className="flex items-center gap-0.5">
+                          <Star className="h-3 w-3 fill-current opacity-70" />
+                          {course.rating}
+                        </span>
+                        <span>·</span>
+                        <span className="flex items-center gap-0.5">
+                          <Users className="h-3 w-3" />
+                          {course.students.toLocaleString()}
+                        </span>
+                        {course.duration && (
+                          <>
+                            <span>·</span>
+                            <span className="flex items-center gap-0.5">
+                              <Clock className="h-3 w-3" />
+                              {course.duration}
+                            </span>
+                          </>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 pt-2 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
+                      <span className="text-base font-bold">₦{course.price.toLocaleString()}</span>
+                      {ownCourse ? (
+                        <Link href="/dashboard/my-courses?view=created">
+                          <Button size="sm" className="h-8 gap-1.5 text-xs">
+                            <PenLine className="h-3.5 w-3.5" />
+                            Manage
+                          </Button>
+                        </Link>
+                      ) : isEnrolled ? (
+                        <Link href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}>
+                          <Button size="sm" className="h-8 gap-1.5 text-xs">
+                            <Play className="h-3.5 w-3.5" />
+                            Continue
+                          </Button>
+                        </Link>
+                      ) : hydrated && isInCart(course.id) ? (
+                        <Link href="/dashboard/cart">
+                          <Button size="sm" variant="secondary" className="h-8 gap-1.5 text-xs">
+                            <ShoppingCart className="h-3.5 w-3.5" />
+                            In cart
+                          </Button>
+                        </Link>
+                      ) : (
+                        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => handleAddToCart(course)}>
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          Add to cart
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )
+          })}
+        </div>
+      ) : null}
     </div>
   )
 }

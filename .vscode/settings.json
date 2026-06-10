@@ -1,0 +1,6 @@
+{
+    "terminal.integrated.defaultProfile.windows": "PowerShell",
+    "workbench.editor.enablePreviewFromQuickOpen": true,
+    "workbench.editor.enablePreviewFromCodeNavigation": true,
+    "terminal.integrated.windowsUseConptyDll": true
+}

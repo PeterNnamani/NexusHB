@@ -1,14 +1,15 @@
 "use server";
 
-import { createServerClient } from '@/lib/supabase/server';
+import { createClient } from '@/lib/supabase-server';
 import { redirect } from 'next/navigation';
+import { buildCoursePaymentReference } from '@/lib/paystack-reference';
 
 /**
  * 1. CREATE PAYMENT INTENT (called when user clicks "Pay Now")
  * Inserts order into database with public.users(id) reference (no auth.users dependency)
  */
 export async function createPaymentIntent(formData: FormData) {
-  const supabase = createServerClient();
+  const supabase = await createClient();
 
   // Get the currently logged-in user (Supabase Auth)
   const { data: { user }, error: authError } = await supabase.auth.getUser();
@@ -24,8 +25,22 @@ export async function createPaymentIntent(formData: FormData) {
     throw new Error("Invalid course or amount");
   }
 
-  // Generate unique reference
-  const reference = `order_${Date.now()}_${crypto.randomUUID().slice(0, 8)}`;
+  const { data: courseRow } = await supabase
+    .from("courses")
+    .select("title, price, status")
+    .eq("id", course_id)
+    .maybeSingle();
+
+  if (!courseRow || courseRow.status !== "published") {
+    throw new Error("Course is not available for purchase");
+  }
+
+  const expectedPrice = Math.round(Number(courseRow.price) || 0);
+  if (Math.round(amount) !== expectedPrice) {
+    throw new Error("Checkout amount does not match course price");
+  }
+
+  const reference = buildCoursePaymentReference(courseRow?.title || "Nexus Course");
 
   console.log("Creating order for user:", user.id, "reference:", reference);
 
@@ -67,7 +82,7 @@ export async function createPaymentIntent(formData: FormData) {
  * Checks with Paystack (source of truth), then updates DB and enrolls user
  */
 export async function verifyPayment(reference: string) {
-  const supabase = createServerClient();
+  const supabase = await createClient();
 
   if (!reference) {
     return { success: false, error: "Missing reference" };
@@ -94,11 +109,11 @@ export async function verifyPayment(reference: string) {
       console.warn("Paystack verification failed:", paystackData.message);
       
       // Mark order as failed
-      await supabase
+      const { error: failError } = await supabase
         .from("orders")
         .update({ status: "failed" })
-        .eq("reference", reference)
-        .catch(err => console.error("Failed to mark order as failed:", err));
+        .eq("reference", reference);
+      if (failError) console.error("Failed to mark order as failed:", failError);
 
       return { success: false, error: paystackData.message || "Payment not successful" };
     }
@@ -125,7 +140,7 @@ export async function verifyPayment(reference: string) {
       .from("orders")
       .update({
         status: "paid",
-        paid_at: new Date().toISOString(),
+        updated_at: new Date().toISOString(),
       })
       .eq("id", order.id);
 
@@ -134,23 +149,29 @@ export async function verifyPayment(reference: string) {
       return { success: false, error: "Failed to update order status" };
     }
 
-    // 4. Enroll user in course
-    const { error: enrollError } = await supabase
-      .from("user_courses")
-      .upsert(
-        {
-          user_id: order.user_id,
-          course_id: order.course_id,
-          enrolled_at: new Date().toISOString(),
-          paid: true,
-        },
-        { onConflict: "user_id,course_id" }
-      );
+    // 4. Enroll user in each course (course_id may be comma-separated UUIDs)
+    const courseIds = String(order.course_id)
+      .split(",")
+      .map((c: string) => c.trim())
+      .filter(Boolean);
 
-    if (enrollError) {
-      console.error("Error enrolling user:", enrollError);
-      // Don't fail the payment if enrollment fails - user can manually enroll
-      console.warn("User will need manual enrollment for course:", order.course_id);
+    for (const courseId of courseIds) {
+      const { error: enrollError } = await supabase
+        .from("enrollments")
+        .upsert(
+          {
+            user_id: order.user_id,
+            course_id: courseId,
+            status: "active",
+            progress: 0,
+            enrolled_at: new Date().toISOString(),
+          },
+          { onConflict: "user_id,course_id" }
+        );
+
+      if (enrollError) {
+        console.error("Error enrolling user:", enrollError);
+      }
     }
 
     console.log("✅ Payment verified and processed successfully!");

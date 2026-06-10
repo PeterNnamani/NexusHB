@@ -11,7 +11,7 @@ export default function SuggestionsPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-header">
         <section className="relative py-16 lg:py-24 overflow-hidden">
           {/* Background */}
           <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-background to-background pointer-events-none" />

@@ -1,61 +1,34 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useEffect } from "react"
+import { useRouter } from "next/navigation"
 import { useAuth } from "@/contexts/auth-context"
-import { DashboardStats } from "@/components/dashboard/dashboard-stats"
-import { DashboardCourses } from "@/components/dashboard/dashboard-courses"
-import { DashboardProgress } from "@/components/dashboard/dashboard-progress"
-import { DashboardActivity } from "@/components/dashboard/dashboard-activity"
-import { DashboardAchievements } from "@/components/dashboard/dashboard-achievements"
-import { CourseLearning } from "@/components/dashboard/course-learning"
+import { useDashboard } from "@/contexts/dashboard-context"
+import { StudentDashboard } from "@/components/dashboard/student-dashboard"
+import { TutorDashboard } from "@/components/dashboard/tutor-dashboard"
+import { normalizeRole } from "@/lib/admin"
 
 export default function DashboardPage() {
-  const { user } = useAuth()
-  const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
-  const firstName = user?.name?.split(" ")[0] || "there"
+  const { user, isLoading, authReady } = useAuth()
+  const { currentRole } = useDashboard()
+  const router = useRouter()
 
-  // Ensure dashboard updates when user state changes
   useEffect(() => {
-    // This dependency watches all user changes, ensuring sync with completed courses
-  }, [user])
+    if (!authReady) return
+    if (!user) {
+      router.replace("/login")
+    }
+  }, [user, authReady, router])
 
-  if (selectedCourseId) {
-    return (
-      <CourseLearning 
-        courseId={selectedCourseId} 
-        onBack={() => setSelectedCourseId(null)} 
-      />
-    )
+  if (!authReady || isLoading) {
+    return <div className="p-6">Loading dashboard...</div>
+  }
+  if (!user) {
+    return null
   }
 
-  return (
-    <div className="space-y-8">
-      
-      {/* Welcome Section */}
-      <div>
-        <h1 className="text-3xl font-bold mb-2">Welcome back, {firstName}!</h1>
-        <p className="text-muted-foreground">
-          Continue your learning journey. You&apos;re making great progress!
-        </p>
-      </div>
+  const role = normalizeRole(currentRole)
 
-      {/* Stats */}
-      <DashboardStats />
-
-      {/* Main Grid */}
-      <div className="grid lg:grid-cols-3 gap-8">
-        {/* Left Column - Courses & Progress */}
-        <div className="lg:col-span-2 space-y-8">
-          <DashboardCourses onCourseSelect={setSelectedCourseId} />
-          <DashboardProgress />
-        </div>
-
-        {/* Right Column - Activity & Achievements */}
-        <div className="space-y-8">
-          <DashboardActivity />
-          <DashboardAchievements />
-        </div>
-      </div>
-    </div>
-  )
+  if (role === "tutor" || role === "admin") return <TutorDashboard />
+  return <StudentDashboard />
 }

@@ -21,8 +21,12 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { CourseLearning } from "@/components/dashboard/course-learning"
-import { supabase } from "@/lib/supabase"
+import { AdminCourses } from "@/components/admin/admin-courses"
+import { canTeachCourses } from "@/lib/admin"
 import { useToast } from "@/hooks/use-toast"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { GraduationCap, PenLine } from "lucide-react"
+import { getCourseImageUrl } from "@/lib/course-image"
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -53,8 +57,10 @@ interface Course {
 }
 
 type FilterStatus = "all" | "in-progress" | "completed"
+type CourseView = "purchased" | "created"
 
 export default function MyCoursesPage() {
+  const [courseView, setCourseView] = useState<CourseView>("purchased")
   const [filter, setFilter] = useState<FilterStatus>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
@@ -67,66 +73,52 @@ export default function MyCoursesPage() {
   const searchParams = useSearchParams()
   const { toast } = useToast()
 
-  // Load courses from courses.json
+  // Load catalog + enrollments in parallel
   useEffect(() => {
-    const loadCourses = async () => {
-      try {
-        const response = await fetch('/courses.json')
-        const data = await response.json()
-        setCourses(data.courses || [])
-      } catch (error) {
-        console.error('Failed to load courses:', error)
-        setCourses([])
-      }
-    }
-    loadCourses()
-  }, [])
+    const load = async () => {
+      if (authLoading) return
 
-  // Fetch enrolled courses from Supabase
-  useEffect(() => {
-    const fetchEnrolledCourses = async () => {
-      if (!user?.id || courses.length === 0) {
+      if (!user?.id) {
         setEnrolledCourses([])
+        setCourses([])
         setLoading(false)
         return
       }
 
-      setLoading(true)
-
       try {
-        const res = await fetch(`/api/user-courses?userId=${encodeURIComponent(user.id)}`)
-        const result = await res.json()
+        const [coursesRes, enrollRes] = await Promise.all([
+          fetch("/api/courses"),
+          fetch(`/api/user-courses?userId=${encodeURIComponent(user.id)}`),
+        ])
+        const coursesData = await coursesRes.json()
+        const enrollData = await enrollRes.json()
 
-        if (!res.ok) {
-          throw new Error(result?.error || 'Failed to fetch enrolled courses')
+        if (!enrollRes.ok) {
+          throw new Error(enrollData?.error || "Failed to fetch enrolled courses")
         }
 
-        const enrolledCourseIds: string[] = []
-        ;(result.courseIds || []).forEach((courseId: string | number) => {
-          const id = typeof courseId === 'string' ? courseId : String(courseId)
-          if (id) {
-            enrolledCourseIds.push(id)
-          }
-        })
+        const catalog: Course[] = coursesData.courses || []
+        setCourses(catalog)
 
-        const enrolled = courses.filter(course => enrolledCourseIds.includes(course.id))
-        setEnrolledCourses(enrolled)
+        const enrolledIds = new Set(
+          (enrollData.courseIds || []).map((id: string | number) => String(id)).filter(Boolean),
+        )
+        setEnrolledCourses(catalog.filter((course) => enrolledIds.has(course.id)))
       } catch (error) {
-        console.error('Failed to fetch enrolled courses:', error)
+        console.error("Failed to load my courses:", error)
         toast({
           title: "Error",
           description: "Failed to load your courses",
           variant: "destructive",
         })
+        setEnrolledCourses([])
       } finally {
         setLoading(false)
       }
     }
 
-    if (!authLoading) {
-      fetchEnrolledCourses()
-    }
-  }, [user?.id, toast, authLoading, courses])
+    load()
+  }, [user?.id, toast, authLoading])
 
   // Handle enrollment success message
   useEffect(() => {
@@ -146,11 +138,26 @@ export default function MyCoursesPage() {
     if (courseId) {
       setSelectedCourseId(courseId)
     }
+    const view = searchParams.get('view')
+    if (view === 'created' || view === 'purchased') {
+      setCourseView(view)
+    }
   }, [searchParams])
+
+  const isTeacher = canTeachCourses(user?.role)
+
+  const switchView = (view: CourseView) => {
+    setCourseView(view)
+    const params = new URLSearchParams(searchParams.toString())
+    params.set('view', view)
+    router.replace(`/dashboard/my-courses?${params.toString()}`)
+  }
 
   const verifyPayment = async (reference: string) => {
       try {
-        const response = await fetch(`/api/verify-payment?reference=${reference}`)
+        const response = await fetch(`/api/verify-payment?reference=${reference}`, {
+          credentials: "include",
+        })
         const data = await response.json()
 
       if (data.success) {
@@ -193,9 +200,7 @@ export default function MyCoursesPage() {
 
   // Function to get actual course status based on completion
   const getActualStatus = (courseId: string) => {
-    // Parse course ID to number for completedCourses check
-    const numericId = parseInt(courseId.replace(/[^0-9]/g, ''), 10)
-    if (user?.completedCourses?.includes(numericId)) {
+    if (user?.completedCourses?.includes(courseId)) {
       return "completed"
     }
     return "in-progress"
@@ -229,9 +234,15 @@ export default function MyCoursesPage() {
   return (
     <>
       {selectedCourseId ? (
-        <CourseLearning 
-          courseId={selectedCourseId.toString()} 
-          onBack={() => setSelectedCourseId(null)}
+        <CourseLearning
+          courseId={selectedCourseId.toString()}
+          onBack={() => {
+            setSelectedCourseId(null)
+            const params = new URLSearchParams(searchParams.toString())
+            params.delete("courseId")
+            const qs = params.toString()
+            router.replace(qs ? `/dashboard/my-courses?${qs}` : "/dashboard/my-courses")
+          }}
         />
       ) : (
         <div className="space-y-8">
@@ -246,13 +257,36 @@ export default function MyCoursesPage() {
           )}
 
           {/* Header */}
-          <div>
-            <h1 className="text-3xl font-bold text-foreground">My Courses</h1>
-            <p className="text-muted-foreground mt-1">
-              Track your enrolled courses and continue learning
-            </p>
+          <div className="space-y-4">
+            <div>
+              <h1 className="text-3xl font-bold text-foreground">My Courses</h1>
+              <p className="text-muted-foreground mt-1">
+                {isTeacher && courseView === "created"
+                  ? "Create, publish and manage the courses you teach"
+                  : "Track your enrolled courses and continue learning"}
+              </p>
+            </div>
+
+            {isTeacher && (
+              <Tabs value={courseView} onValueChange={(v) => switchView(v as CourseView)}>
+                <TabsList className="grid w-full max-w-md grid-cols-2 h-11">
+                  <TabsTrigger value="purchased" className="gap-2">
+                    <GraduationCap className="h-4 w-4" />
+                    Purchased
+                  </TabsTrigger>
+                  <TabsTrigger value="created" className="gap-2">
+                    <PenLine className="h-4 w-4" />
+                    Created
+                  </TabsTrigger>
+                </TabsList>
+              </Tabs>
+            )}
           </div>
 
+          {isTeacher && courseView === "created" ? (
+            <AdminCourses tutorMode />
+          ) : (
+          <>
           {/* Stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <div className="glass-card p-4 rounded-2xl">
@@ -312,7 +346,7 @@ export default function MyCoursesPage() {
                 onChange={(e) => setSearchQuery(e.target.value)}
               />
             </div>
-            <Select value={filter} onValueChange={setFilter}>
+            <Select value={filter} onValueChange={(v) => setFilter(v as FilterStatus)}>
               <SelectTrigger className="w-full sm:w-48">
                 <Filter className="h-4 w-4 mr-2" />
                 <SelectValue placeholder="Filter by status" />
@@ -325,45 +359,49 @@ export default function MyCoursesPage() {
             </Select>
           </div>
 
-          {/* Courses Grid */}
-          <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {/* Courses Grid — 4 per row on xl, equal card heights */}
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {filteredCourses.map((course) => {
               const actualStatus = getActualStatus(course.id)
+              const progress =
+                actualStatus === "completed" ? 100 : user?.courseProgress?.[course.id] || 0
               return (
-              <div key={course.id} id={`course-${course.id}`} className="glass-card rounded-2xl overflow-hidden group">
-                {/* Course Image */}
-                <div className="relative aspect-video overflow-hidden">
+              <div
+                key={course.id}
+                id={`course-${course.id}`}
+                className="glass-card flex h-full flex-col overflow-hidden rounded-xl group"
+              >
+                <div className="relative h-28 shrink-0 overflow-hidden sm:h-32">
                   <img
-                    src={course.image}
+                    src={getCourseImageUrl(course.image)}
                     alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    className="h-full w-full object-cover transition-transform duration-300 group-hover:scale-105"
                   />
-                  <div className="absolute inset-0 bg-linear-to-t from-black/60 to-transparent" />
-                  <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                    <Badge 
+                  <div className="absolute inset-0 bg-linear-to-t from-black/65 to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2 flex items-center justify-between gap-1">
+                    <Badge
                       variant={actualStatus === "completed" ? "default" : "secondary"}
-                      className={actualStatus === "completed" ? "bg-green-500" : ""}
+                      className={`h-5 px-1.5 text-[10px] ${actualStatus === "completed" ? "bg-green-500" : ""}`}
                     >
-                      {actualStatus === "completed" ? "Completed" : "In Progress"}
+                      {actualStatus === "completed" ? "Done" : "Active"}
                     </Badge>
-                    <div className="flex items-center gap-1 text-white text-sm">
-                      <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
+                    <div className="flex items-center gap-0.5 text-[11px] text-white">
+                      <Star className="h-3 w-3 fill-amber-400 text-amber-400" />
                       {course.rating}
                     </div>
                   </div>
                 </div>
 
-                {/* Course Content */}
-                <div className="p-5 space-y-4">
-                  <div>
-                    <div className="flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-foreground line-clamp-2 group-hover:text-primary transition-colors">
+                <div className="flex flex-1 flex-col p-3">
+                  <div className="mb-2 min-h-[3.25rem]">
+                    <div className="flex items-start justify-between gap-1">
+                      <h3 className="line-clamp-2 text-sm font-semibold leading-snug text-foreground transition-colors group-hover:text-primary">
                         {course.title}
                       </h3>
                       <DropdownMenu>
                         <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0">
-                            <MoreVertical className="h-4 w-4" />
+                          <Button variant="ghost" size="icon" className="h-7 w-7 shrink-0 -mr-1">
+                            <MoreVertical className="h-3.5 w-3.5" />
                           </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -378,35 +416,37 @@ export default function MyCoursesPage() {
                         </DropdownMenuContent>
                       </DropdownMenu>
                     </div>
-                    <p className="text-sm text-muted-foreground mt-1">{course.instructor}</p>
+                    <p className="mt-0.5 line-clamp-1 text-xs text-muted-foreground">
+                      {course.instructor}
+                    </p>
                   </div>
 
-                  {/* Progress */}
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between text-sm">
+                  <div className="mb-2 space-y-1">
+                    <div className="flex items-center justify-between text-[11px]">
                       <span className="text-muted-foreground">
-                        {actualStatus === "completed" ? "Course Completed" : `${user?.courseProgress?.[course.id] || 0}% completed`}
+                        {actualStatus === "completed" ? "Completed" : "Progress"}
                       </span>
-                      <span className="font-medium">{actualStatus === "completed" ? "100" : user?.courseProgress?.[course.id] || 0}%</span>
+                      <span className="font-medium">{progress}%</span>
                     </div>
-                    <Progress value={actualStatus === "completed" ? 100 : user?.courseProgress?.[course.id] || 0} className="h-2" />
+                    <Progress value={progress} className="h-1.5" />
                   </div>
 
-                  {/* Meta */}
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span className="flex items-center gap-1">
-                      <Clock className="h-4 w-4" />
-                      {course.duration}
-                    </span>
-                    <span>{course.lastAccessed}</span>
+                  <div className="mb-3 flex items-center gap-1 text-[11px] text-muted-foreground">
+                    <Clock className="h-3 w-3 shrink-0" />
+                    <span className="line-clamp-1">{course.duration || "Self-paced"}</span>
                   </div>
 
-                  {/* Action */}
-                  <Button 
-                    className="w-full" 
-                    onClick={() => setSelectedCourseId(course.id)}
+                  <Button
+                    size="sm"
+                    className="mt-auto h-8 w-full text-xs"
+                    onClick={() => {
+                      setSelectedCourseId(course.id)
+                      const params = new URLSearchParams(searchParams.toString())
+                      params.set("courseId", course.id)
+                      router.replace(`/dashboard/my-courses?${params.toString()}`)
+                    }}
                   >
-                    {actualStatus === "completed" ? "Review Course" : "Continue Learning"}
+                    {actualStatus === "completed" ? "Review" : "Continue"}
                   </Button>
                 </div>
               </div>
@@ -419,9 +459,16 @@ export default function MyCoursesPage() {
               <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
               <h3 className="text-lg font-semibold">No courses found</h3>
               <p className="text-muted-foreground mt-1">
-                Try adjusting your search or filter criteria
+                {isTeacher
+                  ? "Browse the catalog or switch to Created to publish your own courses."
+                  : "Try adjusting your search or filter criteria"}
               </p>
+              <Link href="/dashboard/browse-courses">
+                <Button className="mt-4">Browse courses</Button>
+              </Link>
             </div>
+          )}
+          </>
           )}
         </div>
       )}

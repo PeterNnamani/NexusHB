@@ -1,23 +1,28 @@
+"use client"
+
+import { useEffect, useState } from "react"
 import { BookOpen, Clock, Trophy, Flame } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
-import { courses } from "@/lib/courses"
 
 export function DashboardStats() {
   const { user } = useAuth()
+  const [courses, setCourses] = useState<{ id: string; duration: string }[]>([])
 
-  // Calculate stats based on actual user data
+  useEffect(() => {
+    fetch("/api/courses")
+      .then((res) => res.json())
+      .then((data) => setCourses(data.courses || []))
+      .catch(() => setCourses([]))
+  }, [])
+
   const enrolledCount = user?.enrolledCourses?.length ?? 0
   const completedCount = user?.completedCourses?.length ?? 0
-  const inProgressCount = enrolledCount - completedCount
+  const inProgressCount = Math.max(0, enrolledCount - completedCount)
   const streak = user?.streak ?? 0
 
-  // Get total hours from enrolled courses
   const totalHours = courses
-    .filter(c => user?.enrolledCourses?.includes(c.id))
-    .reduce((sum, course) => {
-      const hours = parseInt(course.duration) || 0
-      return sum + hours
-    }, 0)
+    .filter((c) => user?.enrolledCourses?.includes(c.id))
+    .reduce((sum, course) => sum + (parseInt(course.duration) || 0), 0)
 
   const stats = [
     {
@@ -29,16 +34,16 @@ export function DashboardStats() {
     },
     {
       icon: Clock,
-      label: "Total Hours",
+      label: "Total Weeks",
       value: totalHours.toString(),
-      change: "This month",
+      change: "Across enrolled courses",
       color: "text-secondary bg-secondary/10",
     },
     {
       icon: Trophy,
       label: "Completed",
       value: completedCount.toString(),
-      change: completedCount > 0 ? `${completedCount} course${completedCount !== 1 ? 's' : ''}` : "Get started",
+      change: completedCount > 0 ? `${completedCount} course${completedCount !== 1 ? "s" : ""}` : "Get started",
       color: "text-chart-4 bg-chart-4/10",
     },
     {

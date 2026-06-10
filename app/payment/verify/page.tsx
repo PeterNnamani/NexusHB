@@ -1,14 +1,32 @@
-import { verifyPayment } from '@/app/actions/payment'
 import { redirect } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
+import { verifyAndFulfill } from '@/lib/payment-fulfillment'
+import { createClient as createServerClient } from '@/lib/supabase-server'
 
-async function VerifyPaymentContent({ reference }: { reference: string }) {
+async function VerifyPaymentContent({
+  reference,
+  type,
+}: {
+  reference: string
+  type?: string
+}) {
   try {
-    const result = await verifyPayment(reference)
+    const supabase = await createServerClient()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      redirect(`/?view=login&next=${encodeURIComponent(`/payment/verify?reference=${reference}`)}`)
+    }
+
+    const result = await verifyAndFulfill(reference, { expectedUserId: user.id })
 
     if (result.success) {
-      // Redirect to dashboard with success message
+      if (result.type === 'subscription' || type === 'subscription') {
+        redirect('/dashboard/upgrade?subscribed=true')
+      }
       redirect('/dashboard/my-courses?enrolled=true')
     }
 
@@ -22,7 +40,7 @@ async function VerifyPaymentContent({ reference }: { reference: string }) {
             </svg>
           </div>
           <h1 className="text-2xl font-bold text-red-600">Payment Verification Failed</h1>
-          <p className="text-muted-foreground">{result.error || 'Your payment could not be verified. Please try again or contact support.'}</p>
+          <p className="text-muted-foreground">{result.message || 'Your payment could not be verified. Please try again or contact support.'}</p>
           <div className="space-y-2">
             <p className="text-sm">Reference: <code className="bg-muted px-2 py-1 rounded">{reference}</code></p>
           </div>
@@ -78,13 +96,14 @@ function LoadingSpinner() {
   )
 }
 
-export default async function VerifyPage({ 
-  searchParams 
-}: { 
-  searchParams: Promise<{ reference?: string }> 
+export default async function VerifyPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reference?: string; type?: string }>
 }) {
   const params = await searchParams
   const reference = params.reference
+  const type = params.type
 
   if (!reference) {
     return (
@@ -105,5 +124,5 @@ export default async function VerifyPage({
     )
   }
 
-  return <VerifyPaymentContent reference={reference} />
+  return <VerifyPaymentContent reference={reference} type={type} />
 }

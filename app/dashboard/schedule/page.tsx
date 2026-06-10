@@ -1,103 +1,78 @@
 "use client"
 
-import { useState } from "react"
-import { 
-  Calendar as CalendarIcon, 
-  Clock, 
-  ChevronLeft, 
+import { useState, useEffect, useCallback } from "react"
+import {
+  Calendar as CalendarIcon,
+  Clock,
+  ChevronLeft,
   ChevronRight,
   Plus,
   Video,
   BookOpen,
-  Users,
   Bell,
-  Check
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
+import { Input } from "@/components/ui/input"
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog"
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select"
 import { cn } from "@/lib/utils"
+import { useAuth } from "@/contexts/auth-context"
+import { supabase } from "@/lib/supabase"
 
 const weekDays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
 const months = ["January", "February", "March", "April", "May", "June", "July", "August", "September", "October", "November", "December"]
 
-const scheduledEvents = [
-  {
-    id: 1,
-    title: "React Hooks Deep Dive",
-    type: "lesson",
-    time: "09:00 AM",
-    duration: "1h 30m",
-    date: new Date(2024, 2, 18),
-    instructor: "Michael Torres",
-    reminder: true,
-  },
-  {
-    id: 2,
-    title: "Live Q&A Session",
-    type: "live",
-    time: "02:00 PM",
-    duration: "1h",
-    date: new Date(2024, 2, 18),
-    instructor: "Dr. Sarah Chen",
-    reminder: true,
-  },
-  {
-    id: 3,
-    title: "Group Study: Node.js",
-    type: "group",
-    time: "04:00 PM",
-    duration: "2h",
-    date: new Date(2024, 2, 19),
-    instructor: "Study Group",
-    reminder: false,
-  },
-  {
-    id: 4,
-    title: "TypeScript Fundamentals",
-    type: "lesson",
-    time: "10:00 AM",
-    duration: "45m",
-    date: new Date(2024, 2, 20),
-    instructor: "Dr. Sarah Chen",
-    reminder: true,
-  },
-  {
-    id: 5,
-    title: "Project Review Meeting",
-    type: "live",
-    time: "03:00 PM",
-    duration: "1h",
-    date: new Date(2024, 2, 21),
-    instructor: "Emily Watson",
-    reminder: false,
-  },
-]
-
-const upcomingDeadlines = [
-  { id: 1, title: "React Project Submission", date: "Mar 20, 2024", course: "Advanced React" },
-  { id: 2, title: "TypeScript Quiz", date: "Mar 22, 2024", course: "TypeScript Deep Dive" },
-  { id: 3, title: "Node.js Assignment", date: "Mar 25, 2024", course: "Backend Mastery" },
-]
+interface EventRow {
+  id: string
+  title: string
+  description: string | null
+  type: string
+  start_at: string
+}
 
 export default function SchedulePage() {
-  const [currentDate, setCurrentDate] = useState(new Date(2024, 2, 18))
-  const [selectedDate, setSelectedDate] = useState(new Date(2024, 2, 18))
+  const { user } = useAuth()
+  const today = new Date()
+  const [currentDate, setCurrentDate] = useState(new Date(today.getFullYear(), today.getMonth(), 1))
+  const [selectedDate, setSelectedDate] = useState(today)
+  const [events, setEvents] = useState<EventRow[]>([])
+  const [isOpen, setIsOpen] = useState(false)
+  const [form, setForm] = useState({ title: "", type: "event", date: "", time: "" })
+
+  const loadEvents = useCallback(async () => {
+    if (!user?.id) return
+    const { data } = await supabase
+      .from("events")
+      .select("id, title, description, type, start_at")
+      .eq("user_id", user.id)
+      .order("start_at", { ascending: true })
+    setEvents(data || [])
+  }, [user?.id])
+
+  useEffect(() => {
+    loadEvents()
+  }, [loadEvents])
 
   const getDaysInMonth = (date: Date) => {
     const year = date.getFullYear()
     const month = date.getMonth()
     const firstDay = new Date(year, month, 1)
     const lastDay = new Date(year, month + 1, 0)
-    const daysInMonth = lastDay.getDate()
-    const startingDay = firstDay.getDay()
-    
-    const days = []
-    for (let i = 0; i < startingDay; i++) {
-      days.push(null)
-    }
-    for (let i = 1; i <= daysInMonth; i++) {
-      days.push(new Date(year, month, i))
-    }
+    const days: (Date | null)[] = []
+    for (let i = 0; i < firstDay.getDay(); i++) days.push(null)
+    for (let i = 1; i <= lastDay.getDate(); i++) days.push(new Date(year, month, i))
     return days
   }
 
@@ -105,102 +80,82 @@ export default function SchedulePage() {
 
   const getEventsForDate = (date: Date | null) => {
     if (!date) return []
-    return scheduledEvents.filter(
-      (event) =>
-        event.date.getDate() === date.getDate() &&
-        event.date.getMonth() === date.getMonth() &&
-        event.date.getFullYear() === date.getFullYear()
-    )
+    return events.filter((event) => {
+      const d = new Date(event.start_at)
+      return (
+        d.getDate() === date.getDate() &&
+        d.getMonth() === date.getMonth() &&
+        d.getFullYear() === date.getFullYear()
+      )
+    })
   }
 
-  const hasEvents = (date: Date | null) => {
-    return date ? getEventsForDate(date).length > 0 : false
-  }
-
-  const isToday = (date: Date | null) => {
-    if (!date) return false
-    const today = new Date(2024, 2, 18) // Simulated today
-    return date.toDateString() === today.toDateString()
-  }
-
-  const isSelected = (date: Date | null) => {
-    if (!date) return false
-    return date.toDateString() === selectedDate.toDateString()
-  }
-
-  const prevMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))
-  }
-
-  const nextMonth = () => {
-    setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))
-  }
+  const hasEvents = (date: Date | null) => (date ? getEventsForDate(date).length > 0 : false)
+  const isToday = (date: Date | null) => (date ? date.toDateString() === today.toDateString() : false)
+  const isSelected = (date: Date | null) => (date ? date.toDateString() === selectedDate.toDateString() : false)
 
   const selectedEvents = getEventsForDate(selectedDate)
+  const upcoming = events.filter((e) => new Date(e.start_at) >= today).slice(0, 5)
+  const deadlines = events.filter((e) => e.type === "deadline" && new Date(e.start_at) >= today)
 
-  const getEventIcon = (type: string) => {
-    switch (type) {
-      case "lesson": return BookOpen
-      case "live": return Video
-      case "group": return Users
-      default: return CalendarIcon
-    }
-  }
+  const getEventIcon = (type: string) => (type === "live" ? Video : type === "deadline" ? CalendarIcon : BookOpen)
+  const getEventColor = (type: string) =>
+    type === "live"
+      ? "bg-red-500/10 text-red-500"
+      : type === "deadline"
+        ? "bg-amber-500/10 text-amber-500"
+        : "bg-primary/10 text-primary"
 
-  const getEventColor = (type: string) => {
-    switch (type) {
-      case "lesson": return "bg-primary/10 text-primary"
-      case "live": return "bg-red-500/10 text-red-500"
-      case "group": return "bg-amber-500/10 text-amber-500"
-      default: return "bg-muted text-muted-foreground"
-    }
+  const addEvent = async () => {
+    if (!form.title.trim() || !form.date || !user?.id) return
+    const startAt = new Date(`${form.date}T${form.time || "09:00"}`)
+    await supabase.from("events").insert({
+      user_id: user.id,
+      title: form.title,
+      type: form.type,
+      start_at: startAt.toISOString(),
+    })
+    setIsOpen(false)
+    setForm({ title: "", type: "event", date: "", time: "" })
+    loadEvents()
   }
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Schedule</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your learning schedule and upcoming events
-          </p>
+          <p className="text-muted-foreground mt-1">Manage your learning schedule and upcoming events</p>
         </div>
-        <Button>
+        <Button onClick={() => setIsOpen(true)}>
           <Plus className="h-4 w-4 mr-2" />
           Add Event
         </Button>
       </div>
 
       <div className="grid lg:grid-cols-3 gap-8">
-        {/* Calendar */}
         <div className="lg:col-span-2 space-y-6">
           <div className="glass-card p-6 rounded-2xl">
-            {/* Calendar Header */}
             <div className="flex items-center justify-between mb-6">
               <h2 className="text-xl font-semibold">
                 {months[currentDate.getMonth()]} {currentDate.getFullYear()}
               </h2>
               <div className="flex gap-2">
-                <Button variant="outline" size="icon" onClick={prevMonth}>
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() - 1, 1))}>
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <Button variant="outline" size="icon" onClick={nextMonth}>
+                <Button variant="outline" size="icon" onClick={() => setCurrentDate(new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 1))}>
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
             </div>
 
-            {/* Week Days */}
             <div className="grid grid-cols-7 gap-1 mb-2">
               {weekDays.map((day) => (
-                <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">
-                  {day}
-                </div>
+                <div key={day} className="text-center text-sm font-medium text-muted-foreground py-2">{day}</div>
               ))}
             </div>
 
-            {/* Calendar Grid */}
             <div className="grid grid-cols-7 gap-1">
               {days.map((date, index) => (
                 <button
@@ -212,7 +167,7 @@ export default function SchedulePage() {
                     date && "hover:bg-muted",
                     isToday(date) && "bg-primary/10",
                     isSelected(date) && "bg-primary text-primary-foreground",
-                    !date && "invisible"
+                    !date && "invisible",
                   )}
                 >
                   {date && (
@@ -221,7 +176,7 @@ export default function SchedulePage() {
                       {hasEvents(date) && (
                         <span className={cn(
                           "absolute bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full",
-                          isSelected(date) ? "bg-primary-foreground" : "bg-primary"
+                          isSelected(date) ? "bg-primary-foreground" : "bg-primary",
                         )} />
                       )}
                     </>
@@ -231,7 +186,6 @@ export default function SchedulePage() {
             </div>
           </div>
 
-          {/* Selected Day Events */}
           <div className="glass-card p-6 rounded-2xl">
             <h3 className="text-lg font-semibold mb-4">
               {selectedDate.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}
@@ -247,36 +201,22 @@ export default function SchedulePage() {
                         <Icon className="h-5 w-5" />
                       </div>
                       <div className="flex-1">
-                        <div className="flex items-start justify-between gap-2">
-                          <div>
-                            <h4 className="font-semibold text-foreground">{event.title}</h4>
-                            <p className="text-sm text-muted-foreground">{event.instructor}</p>
-                          </div>
-                          {event.reminder && (
-                            <Badge variant="outline" className="text-xs">
-                              <Bell className="h-3 w-3 mr-1" />
-                              Reminder
-                            </Badge>
-                          )}
-                        </div>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-muted-foreground">
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-4 w-4" />
-                            {event.time}
-                          </span>
-                          <span>{event.duration}</span>
+                        <h4 className="font-semibold text-foreground">{event.title}</h4>
+                        <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                          <Clock className="h-4 w-4" />
+                          {new Date(event.start_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                          <Badge variant="outline" className="ml-2 capitalize">{event.type}</Badge>
                         </div>
                       </div>
-                      <Button size="sm">Join</Button>
                     </div>
                   )
                 })}
               </div>
             ) : (
               <div className="text-center py-8">
-                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                <CalendarIcon className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
                 <p className="text-muted-foreground">No events scheduled for this day</p>
-                <Button variant="outline" className="mt-4">
+                <Button variant="outline" className="mt-4" onClick={() => setIsOpen(true)}>
                   <Plus className="h-4 w-4 mr-2" />
                   Schedule a Session
                 </Button>
@@ -285,73 +225,100 @@ export default function SchedulePage() {
           </div>
         </div>
 
-        {/* Sidebar */}
         <div className="space-y-6">
-          {/* Upcoming Events */}
           <div className="glass-card p-6 rounded-2xl">
             <h3 className="text-lg font-semibold mb-4">Upcoming Events</h3>
-            <div className="space-y-3">
-              {scheduledEvents.slice(0, 4).map((event) => {
-                const Icon = getEventIcon(event.type)
-                return (
-                  <div key={event.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
-                    <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", getEventColor(event.type))}>
-                      <Icon className="h-4 w-4" />
+            {upcoming.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No upcoming events.</p>
+            ) : (
+              <div className="space-y-3">
+                {upcoming.map((event) => {
+                  const Icon = getEventIcon(event.type)
+                  return (
+                    <div key={event.id} className="flex items-center gap-3 p-3 rounded-xl bg-muted/50">
+                      <div className={cn("w-10 h-10 rounded-lg flex items-center justify-center flex-shrink-0", getEventColor(event.type))}>
+                        <Icon className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="font-medium text-sm truncate">{event.title}</p>
+                        <p className="text-xs text-muted-foreground">
+                          {new Date(event.start_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })} at{" "}
+                          {new Date(event.start_at).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                        </p>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{event.title}</p>
-                      <p className="text-xs text-muted-foreground">
-                        {event.date.toLocaleDateString("en-US", { month: "short", day: "numeric" })} at {event.time}
+                  )
+                })}
+              </div>
+            )}
+          </div>
+
+          <div className="glass-card p-6 rounded-2xl">
+            <h3 className="text-lg font-semibold mb-4">Upcoming Deadlines</h3>
+            {deadlines.length === 0 ? (
+              <p className="text-sm text-muted-foreground">No deadlines.</p>
+            ) : (
+              <div className="space-y-3">
+                {deadlines.map((d) => (
+                  <div key={d.id} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
+                    <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
+                      <Bell className="h-4 w-4 text-red-500" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="font-medium text-sm">{d.title}</p>
+                      <p className="text-xs text-red-500 mt-1">
+                        {new Date(d.start_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
                       </p>
                     </div>
                   </div>
-                )
-              })}
-            </div>
-          </div>
-
-          {/* Deadlines */}
-          <div className="glass-card p-6 rounded-2xl">
-            <h3 className="text-lg font-semibold mb-4">Upcoming Deadlines</h3>
-            <div className="space-y-3">
-              {upcomingDeadlines.map((deadline) => (
-                <div key={deadline.id} className="flex items-start gap-3 p-3 rounded-xl bg-muted/50">
-                  <div className="w-8 h-8 rounded-lg bg-red-500/10 flex items-center justify-center flex-shrink-0">
-                    <CalendarIcon className="h-4 w-4 text-red-500" />
-                  </div>
-                  <div className="flex-1">
-                    <p className="font-medium text-sm">{deadline.title}</p>
-                    <p className="text-xs text-muted-foreground">{deadline.course}</p>
-                    <p className="text-xs text-red-500 mt-1">{deadline.date}</p>
-                  </div>
-                  <Button size="icon" variant="ghost" className="h-8 w-8">
-                    <Check className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Quick Stats */}
-          <div className="glass-card p-6 rounded-2xl">
-            <h3 className="text-lg font-semibold mb-4">This Week</h3>
-            <div className="space-y-4">
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Scheduled Sessions</span>
-                <span className="font-semibold">5</span>
+                ))}
               </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Study Hours</span>
-                <span className="font-semibold">12h</span>
-              </div>
-              <div className="flex items-center justify-between">
-                <span className="text-sm text-muted-foreground">Deadlines</span>
-                <span className="font-semibold text-red-500">3</span>
-              </div>
-            </div>
+            )}
           </div>
         </div>
       </div>
+
+      <Dialog open={isOpen} onOpenChange={setIsOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add Event</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <label className="text-sm font-medium">Title</label>
+              <Input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className="mt-2" placeholder="Event title" />
+            </div>
+            <div>
+              <label className="text-sm font-medium">Type</label>
+              <Select value={form.type} onValueChange={(v) => setForm({ ...form, type: v })}>
+                <SelectTrigger className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="event">Study session</SelectItem>
+                  <SelectItem value="live">Live session</SelectItem>
+                  <SelectItem value="deadline">Deadline</SelectItem>
+                  <SelectItem value="reminder">Reminder</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-sm font-medium">Date</label>
+                <Input type="date" value={form.date} onChange={(e) => setForm({ ...form, date: e.target.value })} className="mt-2" />
+              </div>
+              <div>
+                <label className="text-sm font-medium">Time</label>
+                <Input type="time" value={form.time} onChange={(e) => setForm({ ...form, time: e.target.value })} className="mt-2" />
+              </div>
+            </div>
+            <div className="flex gap-3 pt-2">
+              <Button variant="outline" onClick={() => setIsOpen(false)} className="flex-1">Cancel</Button>
+              <Button onClick={addEvent} className="flex-1">Add Event</Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

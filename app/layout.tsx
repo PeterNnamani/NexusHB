@@ -2,18 +2,23 @@ import type { Metadata, Viewport } from 'next'
 import { Inter, Geist_Mono } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
+import { PaystackInlineHost } from '@/components/paystack-inline-host'
 import { AuthProvider } from '@/contexts/auth-context'
 import { CartProvider } from '@/contexts/cart-context'
+import { SiteViewProvider } from '@/contexts/site-view-context'
 import './globals.css'
 
-const inter = Inter({ 
+const inter = Inter({
   subsets: ["latin"],
-  variable: '--font-inter'
+  variable: "--font-inter",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
 })
 
-const geistMono = Geist_Mono({ 
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: '--font-geist-mono'
+  variable: "--font-geist-mono",
+  display: "swap",
 })
 
 export const metadata: Metadata = {
@@ -33,8 +38,8 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   themeColor: [
-    { media: '(prefers-color-scheme: light)', color: '#f5f3f0' },
-    { media: '(prefers-color-scheme: dark)', color: '#2a2520' },
+    { media: '(prefers-color-scheme: light)', color: '#f8f7f4' },
+    { media: '(prefers-color-scheme: dark)', color: '#052e16' },
   ],
 }
 
@@ -45,10 +50,8 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
-      <head>
-        <script src="https://js.paystack.co/v1/inline.js"></script>
-      </head>
-      <body className={`${inter.variable} ${geistMono.variable} font-sans antialiased`}>
+      <body className={`${inter.variable} ${geistMono.variable} ${inter.className} font-sans antialiased`}>
+        <PaystackInlineHost />
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
@@ -57,7 +60,9 @@ export default function RootLayout({
         >
           <AuthProvider>
             <CartProvider>
-              {children}
+              <SiteViewProvider>
+                {children}
+              </SiteViewProvider>
             </CartProvider>
           </AuthProvider>
         </ThemeProvider>

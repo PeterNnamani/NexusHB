@@ -39,7 +39,7 @@ export function CoursesGrid() {
   useEffect(() => {
     const loadCourses = async () => {
       try {
-        const response = await fetch('/courses.json')
+        const response = await fetch('/api/courses')
         const data = await response.json()
         setCourses(data.courses || [])
       } catch (error) {
@@ -55,8 +55,16 @@ export function CoursesGrid() {
   const handleEnroll = async (course: JsonCourse) => {
     if (!user) return
 
-    // Enroll user
-    await enrollCourse(course.id)
+    if (course.price > 0) {
+      window.location.href = `/courses/${course.id}`
+      return
+    }
+
+    try {
+      await enrollCourse(course.id)
+    } catch (error) {
+      alert(error instanceof Error ? error.message : "Could not enroll")
+    }
   }
 
   if (loading) {

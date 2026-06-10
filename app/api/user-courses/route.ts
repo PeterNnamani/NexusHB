@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createServerSupabaseClient } from '@/lib/supabase-server'
 
 export async function GET(request: NextRequest) {
   try {
@@ -10,28 +10,35 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: 'Missing userId query parameter' }, { status: 400 })
     }
 
-    if (!process.env.NEXT_PUBLIC_SUPABASE_URL || !process.env.SUPABASE_SERVICE_ROLE_KEY) {
-      return NextResponse.json({ error: 'Supabase env vars not configured' }, { status: 500 })
+    const supabase = await createServerSupabaseClient()
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabase.auth.getUser()
+
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL,
-      process.env.SUPABASE_SERVICE_ROLE_KEY
-    )
+    if (user.id !== userId) {
+      return NextResponse.json({ error: 'Forbidden' }, { status: 403 })
+    }
 
     const { data, error } = await supabase
-      .from('user_courses')
-      .select('course_id')
+      .from('enrollments')
+      .select('course_id, status, progress')
       .eq('user_id', userId)
-      .eq('paid', true)
+      .in('status', ['active', 'completed'])
 
     if (error) {
       console.error('[api/user-courses] supabase error', error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    const courseIds = data?.map((item: any) => item.course_id) || []
-    return NextResponse.json({ courseIds }, { status: 200 })
+    const courseIds = (data || []).map((item) => item.course_id)
+    const courses = data || []
+    return NextResponse.json({ courseIds, courses }, { status: 200 })
   } catch (err) {
     console.error('[api/user-courses]', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

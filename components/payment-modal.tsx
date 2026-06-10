@@ -7,7 +7,10 @@ import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
 import { Badge } from "@/components/ui/badge"
 import { Clock, Users, Star, BookOpen, ShoppingCart } from "lucide-react"
-import { createPaymentIntent } from "@/app/actions/payment"
+import { initializePaystackPayment } from "@/lib/init-paystack-payment"
+import { openPaystackCheckout } from "@/lib/paystack-checkout"
+import { resolveCheckoutEmail } from "@/lib/checkout-client"
+import { verifyPaymentWithRetry } from "@/lib/verify-payment-client"
 
 interface CourseModule {
   id: string
@@ -20,7 +23,7 @@ interface PaymentModalProps {
   isOpen: boolean
   onClose: () => void
   course: {
-    id: number
+    id: string
     title: string
     price: number
     description?: string
@@ -37,16 +40,10 @@ interface PaymentModalProps {
   onSuccess: () => void
 }
 
-declare global {
-  interface Window {
-    PaystackPop: any
-  }
-}
-
 export function PaymentModal({ isOpen, onClose, course, onSuccess }: PaymentModalProps) {
   const [isProcessing, setIsProcessing] = useState(false)
   const [showAddedMessage, setShowAddedMessage] = useState(false)
-  const { user } = useAuth()
+  const { user, enrollCourse, refreshUser } = useAuth()
   const { addToCart } = useCart()
 
   const handleAddToCart = () => {
@@ -71,7 +68,7 @@ export function PaymentModal({ isOpen, onClose, course, onSuccess }: PaymentModa
 
   const handleEnrollNow = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault()
-    
+
     if (!user) {
       alert("Please login to enroll in this course")
       return
@@ -79,13 +76,45 @@ export function PaymentModal({ isOpen, onClose, course, onSuccess }: PaymentModa
 
     setIsProcessing(true)
 
-    const formData = new FormData()
-    formData.append("course_id", course.id.toString())
-    formData.append("amount", course.price.toString())
-
     try {
-      await createPaymentIntent(formData)
-      // createPaymentIntent will redirect to Paystack
+      if (course.price <= 0) {
+        await enrollCourse(course.id.toString())
+        onSuccess()
+        onClose()
+        return
+      }
+
+      const checkoutEmail = await resolveCheckoutEmail(user.email)
+      const init = await initializePaystackPayment({
+        amount: course.price,
+        email: checkoutEmail,
+        name: user.name || checkoutEmail.split("@")[0],
+        courseIds: [course.id.toString()],
+        courseNames: course.title,
+        userId: user.id,
+      })
+
+      if (!init.success || !init.reference) {
+        throw new Error(init.error || "Payment initialization failed")
+      }
+
+      await openPaystackCheckout({
+        email: checkoutEmail,
+        amount: course.price,
+        reference: init.reference,
+        authorizationUrl: init.authorizationUrl,
+        onClose: () => setIsProcessing(false),
+        onSuccess: async (paidRef) => {
+          const verifyData = await verifyPaymentWithRetry(paidRef)
+          if (!verifyData.success) {
+            throw new Error(verifyData.message || "Payment verification failed")
+          }
+          await refreshUser()
+          onSuccess()
+          onClose()
+          setIsProcessing(false)
+        },
+      })
     } catch (error) {
       setIsProcessing(false)
       const message = error instanceof Error ? error.message : "Payment initialization failed"

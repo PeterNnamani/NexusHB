@@ -1,4 +1,6 @@
-import Link from "next/link"
+"use client"
+
+import { SiteNavLink } from "@/components/site/site-nav-link"
 import { ArrowRight, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 
@@ -6,7 +8,7 @@ export function CTASection() {
   return (
     <section className="py-20 lg:py-32 relative overflow-hidden">
       {/* Background */}
-      <div className="absolute inset-0">
+      <div className="absolute inset-0 pointer-events-none">
         <div className="absolute inset-0 bg-linear-to-br from-primary/20 via-background to-secondary/20" />
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-150 h-150 bg-primary/10 rounded-full blur-3xl" />
       </div>
@@ -27,13 +29,13 @@ export function CTASection() {
           </p>
 
           <div className="flex flex-col sm:flex-row items-center justify-center gap-4">
-            <Link href="/signup">
+            <SiteNavLink href="/signup">
               <Button size="lg" className="rounded-full px-8 h-14 text-base group">
                 Start Learning Free
                 <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
               </Button>
-            </Link>
-            <Link href="/courses">
+            </SiteNavLink>
+            <SiteNavLink href="/courses">
               <Button
                 variant="outline"
                 size="lg"
@@ -41,7 +43,7 @@ export function CTASection() {
               >
                 Browse Courses
               </Button>
-            </Link>
+            </SiteNavLink>
           </div>
 
           <p className="text-sm text-muted-foreground mt-6">

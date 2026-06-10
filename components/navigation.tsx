@@ -1,182 +1,183 @@
 "use client"
 
 import * as React from "react"
-import Link from "next/link"
-import Image from "next/image"
-import { usePathname } from "next/navigation"
+import { NexusLogo } from "@/components/brand/nexus-logo"
 import { Menu, X, ShoppingCart } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
-import { useRouter } from "next/navigation"
+import { useSiteView } from "@/contexts/site-view-context"
+import type { SiteViewId } from "@/lib/masked-routing"
 import { cn } from "@/lib/utils"
 
-const navLinks = [
-  { href: "/", label: "Home" },
-  { href: "/courses", label: "Courses" },
-  { href: "/programs", label: "Programs" },
-  { href: "/news", label: "News" },
-  { href: "/faq", label: "FAQ" },
-  { href: "/contact", label: "Contact" },
+const navLinks: { id: SiteViewId; label: string }[] = [
+  { id: "home", label: "Home" },
+  { id: "courses", label: "Courses" },
+  { id: "programs", label: "Programs" },
+  { id: "news", label: "News" },
+  { id: "faq", label: "FAQ" },
+  { id: "contact", label: "Contact" },
 ]
 
-export function Navigation() {
-  const pathname = usePathname()
-  const router = useRouter()
+export function Navigation({ className }: { className?: string }) {
+  const { view, navigate } = useSiteView()
   const [isOpen, setIsOpen] = React.useState(false)
   const [scrolled, setScrolled] = React.useState(false)
   const { isAuthenticated } = useAuth()
   const { items: cartItems } = useCart()
 
   React.useEffect(() => {
-    const handleScroll = () => {
-      setScrolled(window.scrollY > 20)
-    }
+    const handleScroll = () => setScrolled(window.scrollY > 8)
     window.addEventListener("scroll", handleScroll)
+    handleScroll()
     return () => window.removeEventListener("scroll", handleScroll)
   }, [])
+
+  const go = (id: SiteViewId) => {
+    navigate(id)
+    setIsOpen(false)
+  }
 
   return (
     <header
       className={cn(
-        "fixed top-0 left-0 right-0 z-50 transition-all duration-300",
-        scrolled ? "glass-nav py-3" : "py-4 bg-transparent"
+        "site-header fixed top-0 left-0 right-0 z-50 glass-nav backdrop-blur-xl transition-shadow duration-300",
+        scrolled && "shadow-md",
+        className,
       )}
     >
-      <nav className="container mx-auto px-4 flex items-center justify-between">
-        <Link href="/" className="flex items-center gap-2 group">
-          <div className="relative w-24 h-8 dark:invert transition-transform group-hover:scale-105">
-            <Image
-              src="/images/Logo.jpeg"
-              alt="Nexus Logo"
-              fill
-              className="object-contain"
-              priority
-            />
-          </div>
-        </Link>
+      <nav className="container mx-auto flex h-full items-center justify-between gap-6 px-4 lg:px-6">
+        <button type="button" onClick={() => go("home")} className="shrink-0 text-left">
+          <NexusLogo size="nav" className="max-w-full transition-opacity hover:opacity-90" href={null} />
+        </button>
 
-        {/* Desktop Navigation */}
         <div className="hidden lg:flex items-center gap-1">
           {navLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={link.href}
+            <button
+              key={link.id}
+              type="button"
+              onClick={() => go(link.id)}
               className={cn(
-                "px-4 py-2 rounded-full text-sm font-medium transition-all duration-200",
-                pathname === link.href
-                  ? "bg-primary text-primary-foreground"
-                  : "text-foreground/70 hover:text-foreground hover:bg-muted"
+                "rounded-full px-4 py-2.5 text-[15px] font-semibold transition-all duration-200",
+                view === link.id
+                  ? "bg-primary text-primary-foreground shadow-sm"
+                  : "text-foreground/80 hover:bg-muted hover:text-foreground",
               )}
             >
               {link.label}
-            </Link>
+            </button>
           ))}
         </div>
 
-        <div className="hidden lg:flex items-center gap-3">
+        <div className="hidden lg:flex items-center gap-2.5">
           <ThemeToggle />
           {isAuthenticated ? (
             <>
-              <Button 
-                onClick={() => router.push('/cart')}
-                variant="ghost" 
-                size="icon" 
-                className="glass-button rounded-full relative"
+              <Button
+                onClick={() => go("cart")}
+                variant="outline"
+                size="icon"
+                className="relative h-11 w-11 rounded-full border-border/80"
               >
                 <ShoppingCart className="h-5 w-5" />
                 {cartItems.length > 0 && (
-                  <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-primary rounded-full">
+                  <span className="absolute -right-0.5 -top-0.5 inline-flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
                     {cartItems.length}
                   </span>
                 )}
               </Button>
-              <Link href="/dashboard">
-                <Button className="rounded-full bg-primary hover:bg-primary/90">
-                  Dashboard
-                </Button>
-              </Link>
+              <Button
+                className="h-11 rounded-full bg-primary px-6 text-[15px] font-semibold shadow-sm hover:bg-primary/90"
+                onClick={() => go("dashboard")}
+              >
+                Dashboard
+              </Button>
             </>
           ) : (
             <>
-              <Link href="/login">
-                <Button variant="ghost" className="glass-button rounded-full">
-                  Log In
-                </Button>
-              </Link>
-              <Link href="/signup">
-                <Button className="rounded-full bg-primary hover:bg-primary/90">
-                  Get Started
-                </Button>
-              </Link>
+              <Button
+                variant="ghost"
+                className="h-11 rounded-full px-5 text-[15px] font-semibold"
+                onClick={() => go("login")}
+              >
+                Log In
+              </Button>
+              <Button
+                className="h-11 rounded-full bg-primary px-6 text-[15px] font-semibold shadow-sm hover:bg-primary/90"
+                onClick={() => go("signup")}
+              >
+                Get Started
+              </Button>
             </>
           )}
         </div>
 
-        {/* Mobile Menu Button */}
         <div className="flex lg:hidden items-center gap-2">
           <ThemeToggle />
           <Button
-            variant="ghost"
+            variant="outline"
             size="icon"
             onClick={() => setIsOpen(!isOpen)}
-            className="glass-button rounded-full"
+            className="h-11 w-11 rounded-full border-border/80"
+            aria-label={isOpen ? "Close menu" : "Open menu"}
           >
             {isOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </Button>
         </div>
       </nav>
 
-      {/* Mobile Navigation */}
       {isOpen && (
-        <div className="lg:hidden glass mt-2 mx-4 rounded-2xl p-4 animate-in slide-in-from-top-2">
-          <div className="flex flex-col gap-2">
+        <div className="absolute left-0 right-0 top-full border-b border-border bg-background/98 p-4 shadow-lg backdrop-blur-xl lg:hidden">
+          <div className="container mx-auto flex flex-col gap-1">
             {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => setIsOpen(false)}
+              <button
+                key={link.id}
+                type="button"
+                onClick={() => go(link.id)}
                 className={cn(
-                  "px-4 py-3 rounded-xl text-sm font-medium transition-all",
-                  pathname === link.href
+                  "rounded-xl px-4 py-3 text-left text-base font-semibold transition-all",
+                  view === link.id
                     ? "bg-primary text-primary-foreground"
-                    : "text-foreground/70 hover:text-foreground hover:bg-muted"
+                    : "text-foreground/80 hover:bg-muted hover:text-foreground",
                 )}
               >
                 {link.label}
-              </Link>
+              </button>
             ))}
-            <hr className="border-border my-2" />
+            <hr className="my-2 border-border" />
             {isAuthenticated ? (
               <>
-                <Link href="/cart" onClick={() => setIsOpen(false)}>
-                  <Button 
-                    variant="ghost" 
-                    className="w-full justify-start rounded-xl gap-2"
-                  >
-                    <ShoppingCart className="h-4 w-4" />
-                    Cart {cartItems.length > 0 && `(${cartItems.length})`}
-                  </Button>
-                </Link>
-                <Link href="/dashboard" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-xl bg-primary hover:bg-primary/90">
-                    Dashboard
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="h-11 w-full justify-start gap-2 rounded-xl text-base font-semibold"
+                  onClick={() => go("cart")}
+                >
+                  <ShoppingCart className="h-5 w-5" />
+                  Cart {cartItems.length > 0 && `(${cartItems.length})`}
+                </Button>
+                <Button
+                  className="h-11 w-full rounded-xl bg-primary text-base font-semibold hover:bg-primary/90"
+                  onClick={() => go("dashboard")}
+                >
+                  Dashboard
+                </Button>
               </>
             ) : (
               <>
-                <Link href="/login" onClick={() => setIsOpen(false)}>
-                  <Button variant="ghost" className="w-full justify-start rounded-xl">
-                    Log In
-                  </Button>
-                </Link>
-                <Link href="/signup" onClick={() => setIsOpen(false)}>
-                  <Button className="w-full rounded-xl bg-primary hover:bg-primary/90">
-                    Get Started
-                  </Button>
-                </Link>
+                <Button
+                  variant="ghost"
+                  className="h-11 w-full justify-start rounded-xl text-base font-semibold"
+                  onClick={() => go("login")}
+                >
+                  Log In
+                </Button>
+                <Button
+                  className="h-11 w-full rounded-xl bg-primary text-base font-semibold hover:bg-primary/90"
+                  onClick={() => go("signup")}
+                >
+                  Get Started
+                </Button>
               </>
             )}
           </div>

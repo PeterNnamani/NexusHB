@@ -1,6 +1,6 @@
+"use client"
+
 import { BookOpen, ClipboardList, DollarSign } from "lucide-react"
-import { Button } from "@/components/ui/button"
-import Link from "next/link"
 
 const steps = [
   {
@@ -22,42 +22,41 @@ const steps = [
 
 export function HowItWorksSection() {
   return (
-    <section className="py-20 lg:py-32 relative">
+    <section className="py-16 lg:py-24 bg-muted/40 border-y border-border/60">
       <div className="container mx-auto px-4">
-        <div className="text-center max-w-3xl mx-auto mb-14">
-          <span className="inline-block text-primary font-semibold text-sm uppercase tracking-wider mb-4">
+        <div className="text-center max-w-2xl mx-auto mb-12">
+          <span className="inline-block text-primary font-semibold text-base uppercase tracking-wider mb-3">
             How it works
           </span>
-          <h2 className="text-3xl sm:text-4xl lg:text-5xl font-bold mb-4 text-balance">
-            Learn, complete tasks, and earn in Naira.
+          <h2 className="mb-4 text-balance">
+            Step-by-step learning built for real results
           </h2>
           <p className="text-lg text-muted-foreground leading-relaxed">
-            Our learning path is built to move you from beginner to paid work quickly. Each step is focused on skill mastery and earning fast.
+            A clear path from practical lessons to paid tasks — so you gain real skills and start earning.
           </p>
         </div>
 
-        <div className="grid gap-6 md:grid-cols-3">
-          {steps.map((step) => {
+        <div className="relative grid gap-6 md:grid-cols-3">
+          <div className="hidden md:block absolute top-14 left-[16%] right-[16%] h-px bg-border" aria-hidden />
+          {steps.map((step, i) => {
             const Icon = step.icon
             return (
-              <div key={step.title} className="glass-card rounded-3xl p-8 border border-white/10 shadow-lg">
-                <div className="w-14 h-14 rounded-2xl bg-primary/10 text-primary mb-6 flex items-center justify-center">
-                  <Icon className="h-7 w-7" />
+              <div key={step.title} className="relative rounded-2xl border border-border bg-card p-8 shadow-sm">
+                <div className="mb-5 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-primary-foreground text-sm font-bold">
+                    {i + 1}
+                  </div>
+                  <div className="w-12 h-12 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+                    <Icon className="h-6 w-6" />
+                  </div>
                 </div>
-                <h3 className="text-xl font-semibold mb-3">{step.title}</h3>
-                <p className="text-sm text-muted-foreground leading-relaxed">{step.description}</p>
+                <h3 className="text-xl font-semibold mb-2">{step.title}</h3>
+                <p className="text-base text-muted-foreground leading-relaxed">{step.description}</p>
               </div>
             )
           })}
         </div>
 
-        <div className="mt-12 text-center">
-          <Link href="/courses">
-            <Button size="lg" className="rounded-full px-10">
-              Browse Courses
-            </Button>
-          </Link>
-        </div>
       </div>
     </section>
   )

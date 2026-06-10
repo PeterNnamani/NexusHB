@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation"
 
-import { getCourseById } from "@/lib/courses"
+import { getCourseWithContent } from "@/lib/courses-db"
 import { CourseDetail } from "@/components/course/course-detail"
 
 type CoursePageProps = {
@@ -11,8 +11,7 @@ type CoursePageProps = {
 
 export default async function CoursePage({ params }: CoursePageProps) {
   const { id } = await params
-  const courseId = Number(id)
-  const course = getCourseById(courseId)
+  const course = await getCourseWithContent(id)
 
   if (!course) {
     notFound()

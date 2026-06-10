@@ -2,25 +2,25 @@ import { ShieldCheck, TrendingUp, Users } from "lucide-react"
 
 const proofs = [
   {
-    title: "₦300,000 paid this month",
-    description: "Students earned real income from live tasks and client work.",
+    title: "Learn skills that pay",
+    description: "Practical, project-based courses built around real web development work.",
     icon: TrendingUp,
   },
   {
-    title: "Trusted by over 10,000 learners",
-    description: "Thousands of students have completed courses and landed earning gigs.",
+    title: "Build a real portfolio",
+    description: "Complete tasks and projects you can show clients and employers.",
     icon: Users,
   },
   {
-    title: "Secure payments & fast support",
-    description: "Pay safely and start learning with confidence.",
+    title: "Secure payments & support",
+    description: "Pay safely with Paystack and learn with confidence.",
     icon: ShieldCheck,
   },
 ]
 
 export function EarningsProofSection() {
   return (
-    <section className="py-20 lg:py-32 relative bg-surface/80">
+    <section className="py-16 lg:py-24 relative border-t border-border/60">
       <div className="container mx-auto px-4">
         <div className="text-center max-w-3xl mx-auto mb-14">
           <span className="inline-block text-primary font-semibold text-sm uppercase tracking-wider mb-4">

@@ -6,6 +6,7 @@ import { Play, Clock, ArrowRight, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/contexts/auth-context"
+import { getCourseImageUrl } from "@/lib/course-image"
 
 interface Course {
   id: string
@@ -27,20 +28,19 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
   const [allCourses, setAllCourses] = useState<Course[]>([])
   const { user } = useAuth()
 
-  // Load all courses from JSON once
+  // Load all courses from the database once
   useEffect(() => {
     const loadAllCourses = async () => {
       try {
-        const response = await fetch('/courses.json')
+        const response = await fetch('/api/courses')
         const data = await response.json()
-        const mappedCourses = data.courses.map((course: any, index: number) => ({
-          id: (index + 1).toString(),
+        const mappedCourses = (data.courses || []).map((course: any) => ({
+          id: course.id,
           title: course.title,
           instructor: course.instructor,
           image: course.image,
           duration: course.duration,
-          lessons: course.lessons || 24,
-          nextLesson: course.syllabus[0]?.topic || "Continue",
+          lessons: course.lessons || 0,
         }))
         setAllCourses(mappedCourses)
         setLoading(false)
@@ -57,15 +57,12 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
   useEffect(() => {
     if (loading || allCourses.length === 0) return
 
-    // Only show courses that user is enrolled in AND not completed
     const enrolledAndInProgress = allCourses.filter(course => {
-      const courseId = parseInt(course.id)
-      const isEnrolled = user?.enrolledCourses?.includes(courseId)
-      const isNotCompleted = !user?.completedCourses?.includes(courseId)
+      const isEnrolled = user?.enrolledCourses?.includes(course.id)
+      const isNotCompleted = !user?.completedCourses?.includes(course.id)
       return isEnrolled && isNotCompleted
     })
 
-    console.log('Dashboard filtering. Enrolled in progress:', enrolledAndInProgress.length)
     setCourses(enrolledAndInProgress)
   }, [user, allCourses, loading])
 
@@ -106,7 +103,7 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
           </div>
         ) : (
           courses.map((course) => {
-            const courseProgress = user?.courseProgress?.[parseInt(course.id)] || 0
+            const courseProgress = user?.courseProgress?.[course.id] || 0
             return (
               <div
                 key={course.id}
@@ -115,7 +112,7 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
                 {/* Course Image */}
                 <div className="relative w-full sm:w-32 aspect-video sm:aspect-square rounded-lg overflow-hidden shrink-0">
                   <img
-                    src={course.image}
+                    src={getCourseImageUrl(course.image)}
                     alt={course.title}
                     className="w-full h-full object-cover"
                   />

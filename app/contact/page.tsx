@@ -13,7 +13,7 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen flex flex-col">
       <Navigation />
-      <main className="flex-1 pt-20">
+      <main className="flex-1 pt-header">
         <ContactHero />
         <section className="py-12 lg:py-20">
           <div className="container mx-auto px-4">

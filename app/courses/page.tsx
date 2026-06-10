@@ -2,7 +2,6 @@ import { Navigation } from "@/components/navigation"
 import { Footer } from "@/components/footer"
 import { CoursesHero } from "@/components/courses/courses-hero"
 import { CoursesGrid } from "@/components/courses/courses-grid-new"
-import { CoursesFilter } from "@/components/courses/courses-filter"
 import { FilterProvider } from "@/contexts/filter-context"
 
 export const metadata = {
@@ -13,20 +12,13 @@ export const metadata = {
 export default function CoursesPage() {
   return (
     <FilterProvider>
-      <div className="min-h-screen flex flex-col">
+      <div className="flex min-h-screen flex-col">
         <Navigation />
-        <main className="flex-1 pt-20">
+        <main className="flex-1 pt-header">
           <CoursesHero />
-          <section className="py-6 lg:py-10">
+          <section className="py-8 lg:py-12">
             <div className="container mx-auto px-4">
-              <div className="flex flex-col lg:flex-row gap-4">
-                <aside className="lg:w-64 shrink-0">
-                  <CoursesFilter />
-                </aside>
-                <div className="flex-1">
-                  <CoursesGrid />
-                </div>
-              </div>
+              <CoursesGrid />
             </div>
           </section>
         </main>

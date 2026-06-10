@@ -3,6 +3,8 @@
 import { createContext, useContext, useState, ReactNode } from "react"
 
 interface FilterContextType {
+  searchQuery: string
+  setSearchQuery: (query: string) => void
   selectedCategories: string[]
   selectedLevels: string[]
   selectedPriceRanges: string[]
@@ -11,12 +13,14 @@ interface FilterContextType {
   toggleLevel: (id: string) => void
   togglePriceRange: (id: string) => void
   toggleEarningsRange: (id: string) => void
+  selectCategoryOnly: (id: string | null) => void
   clearFilters: () => void
 }
 
 const FilterContext = createContext<FilterContextType | undefined>(undefined)
 
 export function FilterProvider({ children }: { children: ReactNode }) {
+  const [searchQuery, setSearchQuery] = useState("")
   const [selectedCategories, setSelectedCategories] = useState<string[]>([])
   const [selectedLevels, setSelectedLevels] = useState<string[]>([])
   const [selectedPriceRanges, setSelectedPriceRanges] = useState<string[]>([])
@@ -46,7 +50,12 @@ export function FilterProvider({ children }: { children: ReactNode }) {
     )
   }
 
+  const selectCategoryOnly = (id: string | null) => {
+    setSelectedCategories(id ? [id] : [])
+  }
+
   const clearFilters = () => {
+    setSearchQuery("")
     setSelectedCategories([])
     setSelectedLevels([])
     setSelectedPriceRanges([])
@@ -56,6 +65,8 @@ export function FilterProvider({ children }: { children: ReactNode }) {
   return (
     <FilterContext.Provider
       value={{
+        searchQuery,
+        setSearchQuery,
         selectedCategories,
         selectedLevels,
         selectedPriceRanges,
@@ -64,6 +75,7 @@ export function FilterProvider({ children }: { children: ReactNode }) {
         toggleLevel,
         togglePriceRange,
         toggleEarningsRange,
+        selectCategoryOnly,
         clearFilters,
       }}
     >
