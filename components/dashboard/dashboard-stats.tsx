@@ -29,44 +29,45 @@ export function DashboardStats() {
       icon: BookOpen,
       label: "In Progress",
       value: inProgressCount.toString(),
-      change: `${completedCount} completed`,
-      color: "text-primary bg-primary/10",
+      change: inProgressCount === 0 ? "Start your first course" : `${completedCount} completed`,
+      color: "text-emerald-800 bg-emerald-500/10 border-emerald-500/20 dark:text-emerald-300",
     },
     {
       icon: Clock,
       label: "Total Weeks",
       value: totalHours.toString(),
-      change: "Across enrolled courses",
-      color: "text-secondary bg-secondary/10",
+      change: totalHours === 0 ? "Start your first course" : "Across enrolled courses",
+      color: "text-sky-800 bg-sky-500/10 border-sky-500/20 dark:text-sky-300",
     },
     {
       icon: Trophy,
       label: "Completed",
       value: completedCount.toString(),
-      change: completedCount > 0 ? `${completedCount} course${completedCount !== 1 ? "s" : ""}` : "Get started",
-      color: "text-chart-4 bg-chart-4/10",
+      change: completedCount > 0 ? `${completedCount} course${completedCount !== 1 ? "s" : ""}` : "Start your first course",
+      color: "text-violet-800 bg-violet-500/10 border-violet-500/20 dark:text-violet-300",
     },
     {
       icon: Flame,
       label: "Day Streak",
       value: streak.toString(),
       change: streak > 0 ? "Keep it up!" : "Start learning",
-      color: "text-chart-5 bg-chart-5/10",
+      color: "text-orange-800 bg-orange-500/10 border-orange-500/20 dark:text-orange-300",
     },
   ]
 
   return (
-    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-      {stats.map((stat) => (
-        <div key={stat.label} className="glass-card rounded-2xl p-5">
-          <div className="flex items-center gap-3 mb-3">
-            <div className={`p-2 rounded-xl ${stat.color}`}>
-              <stat.icon className="h-5 w-5" />
+    <div className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+      {stats.map((stat, index) => (
+        <div key={stat.label} style={{ animationDelay: `${index * 60}ms` }} className="metric-enter glass-card relative overflow-hidden rounded-xl border-border/70 bg-card/80 p-4 sm:p-5 dark:hover:bg-[var(--bg-surface)]">
+          <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-emerald-400/50 to-transparent" />
+          <div className="mb-3 flex items-center gap-3">
+            <div className={`rounded-xl border p-2.5 ${stat.color}`}>
+              <stat.icon className="h-5 w-5" strokeWidth={1.75} />
             </div>
           </div>
-          <p className="text-3xl font-bold mb-1">{stat.value}</p>
-          <p className="text-sm text-muted-foreground">{stat.label}</p>
-          <p className="text-xs text-primary mt-2">{stat.change}</p>
+          <p className="mb-1 font-heading text-[32px] font-semibold tabular-nums tracking-tight text-foreground">{stat.value}</p>
+          <p className="text-sm font-medium text-muted-foreground">{stat.label}</p>
+          <p className={`mt-2 text-xs ${stat.value === "0" ? "font-medium text-emerald-700 dark:text-emerald-300" : "text-muted-foreground"}`}>{stat.change}</p>
         </div>
       ))}
     </div>

@@ -115,7 +115,7 @@ export function DashboardSidebar() {
     <>
       <aside
         className={cn(
-          "fixed left-0 top-0 bottom-0 z-40 hidden lg:flex flex-col glass-nav transition-all duration-300",
+          "fixed left-0 top-0 bottom-0 z-40 hidden lg:flex flex-col border-r border-white/5 bg-sidebar/95 backdrop-blur-xl transition-all duration-300",
           isCollapsed ? "w-20" : "w-64",
         )}
       >
@@ -161,14 +161,14 @@ export function DashboardSidebar() {
               type="button"
               onClick={() => go(item.href)}
               className={cn(
-                "flex w-full items-center gap-3 px-3 py-3.5 rounded-xl text-base transition-all",
+                "relative flex w-full items-center gap-3 rounded-xl px-3 py-3.5 text-base transition-all duration-150 ease-out",
                 isActive(item.href)
-                  ? "bg-primary text-primary-foreground font-medium"
+                  ? "bg-primary/15 font-medium text-foreground before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-400"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted font-medium",
                 isCollapsed && "justify-center px-0",
               )}
             >
-              <item.icon className="h-5 w-5 flex-shrink-0" />
+              <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive(item.href) && "text-emerald-800 dark:text-emerald-300")} />
               {!isCollapsed && <span>{item.label}</span>}
             </button>
           ))}
@@ -181,7 +181,7 @@ export function DashboardSidebar() {
               type="button"
               onClick={() => go(item.href)}
               className={cn(
-                "flex w-full items-center gap-3 px-3 py-3.5 rounded-xl text-base font-medium transition-all text-muted-foreground hover:text-foreground hover:bg-muted",
+                "flex w-full items-center gap-3 rounded-xl px-3 py-3.5 text-base font-medium text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground",
                 isCollapsed && "justify-center px-0",
               )}
             >
@@ -206,17 +206,19 @@ export function DashboardSidebar() {
 
         <div className="p-4 border-t border-border">
           <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
-            {user?.avatar ? (
-              <img
-                src={user.avatar}
-                alt={user.name || "User"}
-                className="w-10 h-10 rounded-full object-cover flex-shrink-0"
-              />
-            ) : (
-              <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center font-semibold flex-shrink-0">
-                {initials}
-              </div>
-            )}
+            <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-800 p-0.5">
+              {user?.avatar ? (
+                <img
+                  src={user.avatar}
+                  alt={user.name || "User"}
+                  className="h-full w-full rounded-full border-2 border-sidebar object-cover"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-sidebar bg-sidebar text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                  {initials}
+                </div>
+              )}
+            </div>
             {!isCollapsed && (
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">{user?.name || "Your account"}</p>
@@ -245,8 +247,8 @@ export function DashboardSidebar() {
               type="button"
               onClick={() => go(item.href)}
               className={cn(
-                "flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all",
-                isActive(item.href) ? "text-primary" : "text-muted-foreground",
+                "flex flex-col items-center gap-1 rounded-xl px-3 py-2 transition-all duration-150",
+                isActive(item.href) ? "bg-primary/15 text-emerald-300" : "text-muted-foreground hover:bg-muted",
               )}
             >
               <item.icon className="h-5 w-5" />

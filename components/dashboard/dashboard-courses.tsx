@@ -68,14 +68,14 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
 
   if (loading) {
     return (
-      <div className="glass-card rounded-2xl p-6">
+      <div className="glass-card rounded-xl p-6">
         <p className="text-muted-foreground">Loading courses...</p>
       </div>
     )
   }
 
   return (
-    <div className="glass-card rounded-2xl p-6">
+    <div className="glass-card rounded-xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Continue Learning</h2>
         <Link href="/dashboard/my-courses">
@@ -88,15 +88,17 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
 
       <div className="space-y-4">
         {courses.length === 0 ? (
-          <div className="text-center py-12">
-            <BookOpen className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
-            <p className="text-muted-foreground mb-4">
+          <div className="flex flex-col items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-5 py-10 text-center sm:py-12">
+            <div className="mb-4 rounded-2xl border border-emerald-500/20 bg-gradient-to-br from-emerald-500/15 to-emerald-500/5 p-3 text-emerald-300">
+              <BookOpen className="h-6 w-6" strokeWidth={1.75} />
+            </div>
+            <p className="mb-4 max-w-md text-sm leading-6 text-muted-foreground">
               {user?.completedCourses && user.completedCourses.length > 0
                 ? "You've completed all your enrolled courses! 🎉"
                 : "No courses enrolled yet. Browse our catalog to get started!"}
             </p>
             <Link href="/courses">
-              <Button variant="outline" className="rounded-full">
+              <Button variant="outline" className="border-border/80">
                 Explore Courses
               </Button>
             </Link>

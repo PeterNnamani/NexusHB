@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next'
-import { Inter, Geist_Mono } from 'next/font/google'
+import { Inter, Geist_Mono, Space_Grotesk } from 'next/font/google'
 import { Analytics } from '@vercel/analytics/next'
 import { ThemeProvider } from '@/components/theme-provider'
 import { PaystackInlineHost } from '@/components/paystack-inline-host'
@@ -11,6 +11,13 @@ import './globals.css'
 const inter = Inter({
   subsets: ["latin"],
   variable: "--font-inter",
+  display: "swap",
+  weight: ["400", "500", "600", "700"],
+})
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
   display: "swap",
   weight: ["400", "500", "600", "700"],
 })
@@ -50,7 +57,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className="bg-background" suppressHydrationWarning>
-      <body className={`${inter.variable} ${geistMono.variable} ${inter.className} font-sans antialiased`}>
+      <body className={`${inter.variable} ${spaceGrotesk.variable} ${geistMono.variable} ${inter.className} font-sans antialiased`}>
         <PaystackInlineHost />
         <ThemeProvider
           attribute="class"

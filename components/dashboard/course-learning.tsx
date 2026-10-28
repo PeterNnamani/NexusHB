@@ -469,7 +469,12 @@ export function CourseLearning({ courseId, onBack }: CourseLearningProps) {
             {activeTab === "materials" && (
               <div className="space-y-3">
                 {weekMaterials.length === 0 ? (
-                  <p className="text-muted-foreground">No materials for this topic yet.</p>
+                  <div className="flex items-center gap-3 rounded-xl border border-dashed border-border/80 bg-muted/20 p-4">
+                    <span className="rounded-xl border border-sky-500/20 bg-sky-500/10 p-2 text-sky-800 dark:text-sky-300">
+                      <FileText className="h-5 w-5" strokeWidth={1.75} />
+                    </span>
+                    <p className="text-sm text-muted-foreground">No materials for this topic yet.</p>
+                  </div>
                 ) : (
                   weekMaterials.map((m) => (
                     <a

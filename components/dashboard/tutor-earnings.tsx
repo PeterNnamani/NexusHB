@@ -87,7 +87,12 @@ export function TutorEarnings() {
               ))}
             </div>
           ) : (
-            <p className="text-muted-foreground">No sales yet. Publish a course to start earning.</p>
+            <div className="flex items-center gap-3 rounded-xl border border-dashed border-border/80 bg-muted/20 p-4">
+              <span className="rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2 text-emerald-800 dark:text-emerald-300">
+                <DollarSign className="h-5 w-5" strokeWidth={1.75} />
+              </span>
+              <p className="text-sm text-muted-foreground">No sales yet. Publish a course to start earning.</p>
+            </div>
           )}
         </CardContent>
       </Card>
