@@ -42,8 +42,10 @@ export function Navigation({ className }: { className?: string }) {
   return (
     <header
       className={cn(
-        "site-header fixed top-0 left-0 right-0 z-50 glass-nav backdrop-blur-xl transition-shadow duration-300",
-        scrolled && "shadow-md",
+        "site-header fixed top-0 left-0 right-0 z-50 border-b border-transparent transition-[background-color,backdrop-filter,border-color,box-shadow] duration-300 ease-out",
+        scrolled
+          ? "border-border/70 bg-background/90 shadow-md backdrop-blur-xl dark:bg-[#070c0a]/90"
+          : "bg-transparent shadow-none backdrop-blur-0",
         className,
       )}
     >
@@ -59,9 +61,9 @@ export function Navigation({ className }: { className?: string }) {
               type="button"
               onClick={() => go(link.id)}
               className={cn(
-                "rounded-full px-4 py-2.5 text-[15px] font-semibold transition-all duration-200",
+                "rounded-full px-4 py-2.5 text-[15px] font-semibold transition-all duration-300 ease-out",
                 view === link.id
-                  ? "bg-primary text-primary-foreground shadow-sm"
+                  ? "bg-primary/15 text-foreground shadow-sm dark:bg-gradient-to-r dark:from-emerald-400/15 dark:to-emerald-500/5 dark:text-emerald-300 dark:shadow-[inset_0_0_0_1px_rgba(16,185,129,0.14)]"
                   : "text-foreground/80 hover:bg-muted hover:text-foreground",
               )}
             >
@@ -88,7 +90,7 @@ export function Navigation({ className }: { className?: string }) {
                 )}
               </Button>
               <Button
-                className="h-11 rounded-full bg-primary px-6 text-[15px] font-semibold shadow-sm hover:bg-primary/90"
+                className="h-11 px-6 text-[15px] font-semibold"
                 onClick={() => go("dashboard")}
               >
                 Dashboard
@@ -104,7 +106,7 @@ export function Navigation({ className }: { className?: string }) {
                 Log In
               </Button>
               <Button
-                className="h-11 rounded-full bg-primary px-6 text-[15px] font-semibold shadow-sm hover:bg-primary/90"
+                className="h-11 px-6 text-[15px] font-semibold"
                 onClick={() => go("signup")}
               >
                 Get Started
@@ -138,7 +140,7 @@ export function Navigation({ className }: { className?: string }) {
                 className={cn(
                   "rounded-xl px-4 py-3 text-left text-base font-semibold transition-all",
                   view === link.id
-                    ? "bg-primary text-primary-foreground"
+                    ? "bg-primary/15 text-foreground dark:text-emerald-300"
                     : "text-foreground/80 hover:bg-muted hover:text-foreground",
                 )}
               >

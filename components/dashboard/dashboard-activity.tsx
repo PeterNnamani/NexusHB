@@ -102,11 +102,16 @@ export function DashboardActivity() {
   }, [load])
 
   return (
-    <div className="glass-card rounded-2xl p-6">
-      <h2 className="text-xl font-semibold mb-6">Recent Activity</h2>
+    <div className="glass-card rounded-xl p-5 sm:p-6">
+      <h2 className="mb-6 font-heading text-xl font-semibold tracking-tight">Recent Activity</h2>
 
       {activities.length === 0 ? (
-        <p className="text-sm text-muted-foreground">No activity yet. Start learning to see your progress here.</p>
+        <div className="flex flex-col items-center rounded-xl border border-dashed border-border/80 bg-muted/20 px-4 py-6 text-center">
+          <div className="mb-3 rounded-xl border border-emerald-500/20 bg-emerald-500/10 p-2.5 text-emerald-800 dark:text-emerald-300">
+            <BookOpen className="h-5 w-5" strokeWidth={1.75} />
+          </div>
+          <p className="text-sm text-muted-foreground">No activity yet. Start learning to see your progress here.</p>
+        </div>
       ) : (
         <div className="space-y-4">
           {activities.map((activity) => (

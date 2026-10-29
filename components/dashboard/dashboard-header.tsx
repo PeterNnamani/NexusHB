@@ -130,11 +130,11 @@ export function DashboardHeader() {
       {/* Search */}
       <div className="hidden min-w-0 max-w-xl flex-1 md:block">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
             placeholder="Search courses, lessons..."
-            className="h-11 pl-10 glass-card font-medium"
+            className="h-11 rounded-xl border-border/70 bg-background/70 pl-10 font-medium focus-visible:bg-background"
           />
         </div>
       </div>
@@ -154,13 +154,13 @@ export function DashboardHeader() {
         <Button
           variant="ghost"
           size="icon"
-          className="relative h-10 w-10"
+          className="relative h-10 w-10 rounded-full hover:bg-accent"
           onClick={() => goDashboard("/dashboard/cart")}
           aria-label="Shopping cart"
         >
           <ShoppingCart className="h-5 w-5" />
           {cartCount > 0 && (
-            <span className="absolute -top-0.5 -right-0.5 min-w-[1.125rem] h-[1.125rem] px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+            <span className="absolute -right-0.5 -top-0.5 flex h-[1.125rem] min-w-[1.125rem] items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-primary-foreground">
               {cartCount}
             </span>
           )}
@@ -170,10 +170,10 @@ export function DashboardHeader() {
         {/* Notifications */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" size="icon" className="relative h-10 w-10">
+            <Button variant="ghost" size="icon" className="relative h-10 w-10 rounded-full hover:bg-accent">
               <Bell className="h-5 w-5" />
               {unreadCount > 0 && (
-                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
+                <span className="absolute right-2 top-2 h-2 w-2 rounded-full bg-red-500 ring-2 ring-background" />
               )}
             </Button>
           </DropdownMenuTrigger>
@@ -215,9 +215,11 @@ export function DashboardHeader() {
         {/* User Menu */}
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-10 px-2 gap-2">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary font-medium">
-                {user?.name?.charAt(0).toUpperCase() || "U"}
+            <Button variant="ghost" className="h-10 gap-2 rounded-full px-2 hover:bg-accent">
+              <div className="h-8 w-8 rounded-full bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-800 p-0.5">
+                <div className="flex h-full w-full items-center justify-center rounded-full border-2 border-background bg-background text-sm font-semibold text-emerald-800 dark:text-emerald-300">
+                  {user?.name?.charAt(0).toUpperCase() || "U"}
+                </div>
               </div>
               <span className="hidden sm:block font-medium">{user?.name?.split(" ")[0] || "User"}</span>
             </Button>
@@ -259,11 +261,11 @@ export function DashboardHeader() {
       {showSearch && (
         <div className="absolute top-full left-0 right-0 p-4 glass-nav md:hidden">
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
             <Input
               type="search"
               placeholder="Search courses, lessons..."
-              className="pl-10 h-12"
+              className="h-12 rounded-xl border-border/70 bg-background/70 pl-10"
               autoFocus
             />
           </div>
