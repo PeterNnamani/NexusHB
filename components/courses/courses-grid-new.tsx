@@ -1,7 +1,7 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Clock, Users, Star, Grid, List, ShoppingCart, Play, PenLine, BookOpen, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,6 +11,7 @@ import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { getCourseImageUrl } from "@/lib/course-image"
 import { useFilter } from "@/contexts/filter-context"
+import { useDashboardPathOptional } from "@/contexts/dashboard-path-context"
 import { CoursesFilter } from "@/components/courses/courses-filter"
 import { CategoryBadge } from "@/components/category-badge"
 import {
@@ -55,12 +56,21 @@ export function CoursesGrid() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("popular")
   const { user } = useAuth()
+  const router = useRouter()
+  const dashboardPath = useDashboardPathOptional()
   const { toast } = useToast()
   const isTutor = canTeachCourses(user?.role)
   const { addToCart, isInCart, hydrated } = useCart()
 
   const isOwnCourse = (course: JsonCourse) =>
     isTutor && Boolean(user?.id && course.instructorId === user.id)
+  const navigateDashboard = (path: string) => {
+    if (dashboardPath) {
+      dashboardPath.navigate(path)
+      return
+    }
+    router.push(path)
+  }
   const {
     searchQuery,
     selectedCategories,
@@ -294,29 +304,37 @@ export function CoursesGrid() {
                         )}
                       </span>
                       {ownCourse ? (
-                        <Link href="/dashboard/my-courses?view=created" className="shrink-0">
-                          <Button size="sm" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
-                            <PenLine className="h-3 w-3" />
-                            Manage
-                          </Button>
-                        </Link>
-                      ) : isEnrolled ? (
-                        <Link
-                          href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}
-                          className="shrink-0"
+                        <Button
+                          size="sm"
+                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
+                          onClick={() => navigateDashboard("/dashboard/my-courses?view=created")}
                         >
-                          <Button size="sm" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
-                            <Play className="h-3 w-3" />
-                            Continue
-                          </Button>
-                        </Link>
+                          <PenLine className="h-3 w-3" />
+                          Manage
+                        </Button>
+                      ) : isEnrolled ? (
+                        <Button
+                          size="sm"
+                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
+                          onClick={() =>
+                            navigateDashboard(
+                              `/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`,
+                            )
+                          }
+                        >
+                          <Play className="h-3 w-3" />
+                          Continue
+                        </Button>
                       ) : hydrated && isInCart(course.id) ? (
-                        <Link href="/dashboard/cart" className="shrink-0">
-                          <Button size="sm" variant="secondary" className="h-7 gap-1 rounded-full px-2.5 text-[10px]">
-                            <ShoppingCart className="h-3 w-3" />
-                            Cart
-                          </Button>
-                        </Link>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
+                          onClick={() => navigateDashboard("/dashboard/cart")}
+                        >
+                          <ShoppingCart className="h-3 w-3" />
+                          Cart
+                        </Button>
                       ) : (
                         <Button
                           size="sm"
@@ -384,26 +402,37 @@ export function CoursesGrid() {
                     <div className="flex shrink-0 items-center justify-between gap-3 border-t border-border/60 pt-2 sm:flex-col sm:items-end sm:border-0 sm:pt-0">
                       <span className="text-base font-bold">₦{course.price.toLocaleString()}</span>
                       {ownCourse ? (
-                        <Link href="/dashboard/my-courses?view=created">
-                          <Button size="sm" className="h-8 gap-1.5 text-xs">
-                            <PenLine className="h-3.5 w-3.5" />
-                            Manage
-                          </Button>
-                        </Link>
+                        <Button
+                          size="sm"
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() => navigateDashboard("/dashboard/my-courses?view=created")}
+                        >
+                          <PenLine className="h-3.5 w-3.5" />
+                          Manage
+                        </Button>
                       ) : isEnrolled ? (
-                        <Link href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}>
-                          <Button size="sm" className="h-8 gap-1.5 text-xs">
-                            <Play className="h-3.5 w-3.5" />
-                            Continue
-                          </Button>
-                        </Link>
+                        <Button
+                          size="sm"
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() =>
+                            navigateDashboard(
+                              `/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`,
+                            )
+                          }
+                        >
+                          <Play className="h-3.5 w-3.5" />
+                          Continue
+                        </Button>
                       ) : hydrated && isInCart(course.id) ? (
-                        <Link href="/dashboard/cart">
-                          <Button size="sm" variant="secondary" className="h-8 gap-1.5 text-xs">
-                            <ShoppingCart className="h-3.5 w-3.5" />
-                            In cart
-                          </Button>
-                        </Link>
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          className="h-8 gap-1.5 text-xs"
+                          onClick={() => navigateDashboard("/dashboard/cart")}
+                        >
+                          <ShoppingCart className="h-3.5 w-3.5" />
+                          In cart
+                        </Button>
                       ) : (
                         <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => handleAddToCart(course)}>
                           <ShoppingCart className="h-3.5 w-3.5" />
