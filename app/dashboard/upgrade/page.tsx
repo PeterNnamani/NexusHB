@@ -1,6 +1,6 @@
 "use client"
 
-import { useCallback, useEffect, useRef, useState } from "react"
+import { useCallback, useEffect, useMemo, useRef, useState } from "react"
 import Link from "next/link"
 import { useRouter, useSearchParams } from "next/navigation"
 import {
@@ -33,6 +33,7 @@ import { initializePaystackPayment } from "@/lib/init-paystack-payment"
 import { openPaystackCheckout } from "@/lib/paystack-checkout"
 import { verifyPaymentWithRetry } from "@/lib/verify-payment-client"
 import { useAuth } from "@/contexts/auth-context"
+import { useDashboardPathOptional } from "@/contexts/dashboard-path-context"
 import { useToast } from "@/hooks/use-toast"
 import { resolveCheckoutEmail } from "@/lib/checkout-client"
 
@@ -56,6 +57,7 @@ export default function UpgradePage() {
   const { user, refreshUser } = useAuth()
   const router = useRouter()
   const searchParams = useSearchParams()
+  const dashboardPath = useDashboardPathOptional()
   const { toast } = useToast()
   const [processing, setProcessing] = useState<PlanSlug | null>(null)
   const [activating, setActivating] = useState(false)
@@ -64,17 +66,23 @@ export default function UpgradePage() {
   const [subRefreshing, setSubRefreshing] = useState(false)
   const hasSubLoadedRef = useRef(false)
 
+  const routeSearchParams = useMemo(() => {
+    if (!dashboardPath) return searchParams
+    const query = dashboardPath.path.split("?")[1] || ""
+    return new URLSearchParams(query)
+  }, [dashboardPath?.path, searchParams])
+
   const accountRole = user?.role || subState?.role || "student"
   const isTeacher = isTeachingRole(accountRole)
   const initialView: PlanView =
-    searchParams.get("view") === "tutor" || isTeacher ? "tutor" : "student"
+    routeSearchParams.get("view") === "tutor" || isTeacher ? "tutor" : "student"
   const [planView, setPlanView] = useState<PlanView>(initialView)
 
   useEffect(() => {
-    if (searchParams.get("view") === "tutor" && !isTeacher) {
+    if (routeSearchParams.get("view") === "tutor" && !isTeacher) {
       setPlanView("tutor")
     }
-  }, [searchParams, isTeacher])
+  }, [routeSearchParams, isTeacher])
 
   const setPlanViewAndUrl = (view: PlanView) => {
     setPlanView(view)
@@ -85,7 +93,12 @@ export default function UpgradePage() {
       params.delete("view")
     }
     const qs = params.toString()
-    router.replace(qs ? `/dashboard/upgrade?${qs}` : "/dashboard/upgrade", { scroll: false })
+    const nextPath = qs ? `/dashboard/upgrade?${qs}` : "/dashboard/upgrade"
+    if (dashboardPath) {
+      dashboardPath.navigate(nextPath)
+    } else {
+      router.replace(nextPath, { scroll: false })
+    }
   }
 
   const visiblePlans = plansForUpgradeView(planView, accountRole)
@@ -142,12 +155,12 @@ export default function UpgradePage() {
   }, [loadSubscription])
 
   useEffect(() => {
-    if (searchParams.get("subscribed") === "true") {
+    if (routeSearchParams.get("subscribed") === "true") {
       loadSubscription()
       refreshUser()
       toast({ title: "Subscription updated" })
     }
-  }, [searchParams, loadSubscription, refreshUser, toast])
+  }, [routeSearchParams, loadSubscription, refreshUser, toast])
 
   const checkout = async (planSlug: PlanSlug) => {
     if (!user) {
