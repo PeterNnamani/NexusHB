@@ -90,14 +90,26 @@ export async function POST(
     return NextResponse.json({ error: "Unable to join this class" }, { status: 409 })
   }
 
+  let result: Awaited<ReturnType<typeof createLiveKitToken>>
   try {
-    const result = await createLiveKitToken({
+    result = await createLiveKitToken({
       identity: user.id,
       name: profile.name || profile.email || user.email || "Student",
       roomName: session.room_name,
       role: "student",
     })
-    const [{ data: participant, error: participantError }, { data: latestSession, error: latestSessionError }] =
+  } catch (error) {
+    console.error("[live-session join] Token issuance failed", error)
+    return NextResponse.json({ error: "Unable to issue a classroom token" }, { status: 503 })
+  }
+
+  let participant: { status: string } | null
+  let latestSession: { status: string } | null
+  try {
+    const [
+      { data: participantData, error: participantError },
+      { data: latestSessionData, error: latestSessionError },
+    ] =
       await Promise.all([
         admin
           .from("live_session_participants")
@@ -115,15 +127,18 @@ export async function POST(
       console.error("[live-session join] Session status check failed", latestSessionError)
       return NextResponse.json({ error: "Unable to confirm classroom status" }, { status: 503 })
     }
-    if (latestSession?.status !== "live") {
-      return NextResponse.json({ error: "This class is no longer live" }, { status: 409 })
-    }
-    if (!participant || participant.status === "removed") {
-      return NextResponse.json({ error: "You were removed from this class; ask the tutor to re-admit you" }, { status: 403 })
-    }
-    return NextResponse.json({ status: "admitted", ...result })
+    participant = participantData
+    latestSession = latestSessionData
   } catch (error) {
-    console.error("[live-session join] Token issuance failed", error)
-    return NextResponse.json({ error: "Unable to issue a classroom token" }, { status: 503 })
+    console.error("[live-session join] Admission status check failed", error)
+    return NextResponse.json({ error: "Unable to confirm classroom admission" }, { status: 503 })
   }
+
+  if (latestSession?.status !== "live") {
+    return NextResponse.json({ error: "This class is no longer live" }, { status: 409 })
+  }
+  if (!participant || participant.status === "removed") {
+    return NextResponse.json({ error: "You were removed from this class; ask the tutor to re-admit you" }, { status: 403 })
+  }
+  return NextResponse.json({ status: "admitted", ...result })
 }
