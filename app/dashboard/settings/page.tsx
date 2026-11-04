@@ -17,12 +17,14 @@ interface NotificationPrefs {
   emailNotifications: boolean
   courseUpdates: boolean
   messageNotifications: boolean
+  liveClassNotifications: boolean
 }
 
 const defaultPrefs: NotificationPrefs = {
   emailNotifications: true,
   courseUpdates: true,
   messageNotifications: true,
+  liveClassNotifications: true,
 }
 
 export default function SettingsPage() {
@@ -142,6 +144,7 @@ export default function SettingsPage() {
                 { key: "emailNotifications" as const, title: "Email Notifications", desc: "Receive updates via email" },
                 { key: "courseUpdates" as const, title: "Course Updates", desc: "New lessons and course changes" },
                 { key: "messageNotifications" as const, title: "Message Notifications", desc: "New messages from instructors" },
+                { key: "liveClassNotifications" as const, title: "Live Class Notifications", desc: "Show in-app alerts when a class is scheduled for your enrolled course" },
               ].map((item) => (
                 <div key={item.key} className="flex items-center justify-between p-4 rounded-xl bg-muted/50">
                   <div>

@@ -27,6 +27,7 @@ interface Notification {
   description: string
   time: string
   at: number
+  path?: string
 }
 
 function timeAgo(date: string) {
@@ -70,7 +71,7 @@ export function DashboardHeader({
         .limit(3),
       supabase
         .from("events")
-        .select("id, title, start_at")
+        .select("id, title, start_at, type")
         .eq("user_id", user.id)
         .gte("start_at", new Date().toISOString())
         .order("start_at", { ascending: true })
@@ -92,10 +93,11 @@ export function DashboardHeader({
       const row = e as any
       items.push({
         id: `event-${row.id}`,
-        title: "Upcoming event",
-        description: `${row.title} on ${new Date(row.start_at).toLocaleDateString()}`,
-        time: timeAgo(row.start_at),
+        title: row.type === "live" ? "Live class scheduled" : "Upcoming event",
+        description: `${row.title} on ${new Date(row.start_at).toLocaleString()}`,
+        time: row.type === "live" ? "Open Live Classroom" : timeAgo(row.start_at),
         at: new Date(row.start_at).getTime(),
+        path: row.type === "live" ? "/dashboard/live-classroom" : undefined,
       })
     }
     items.sort((a, b) => b.at - a.at)
@@ -222,6 +224,7 @@ export function DashboardHeader({
                 <DropdownMenuItem
                   key={notification.id}
                   className="flex flex-col items-start gap-1 p-3 cursor-pointer"
+                  onSelect={() => notification.path && goDashboard(notification.path)}
                 >
                   <div className="flex items-center gap-2 w-full">
                     <span className="font-medium flex-1">{notification.title}</span>

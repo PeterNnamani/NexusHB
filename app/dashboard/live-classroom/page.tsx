@@ -22,7 +22,6 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
 import { useAuth } from "@/contexts/auth-context"
 import { useToast } from "@/hooks/use-toast"
@@ -36,7 +35,19 @@ interface LiveSession {
   duration_minutes: number
   room_name: string
   course_id: string | null
+  lesson_id: string | null
+  host_id: string
   courses?: { title: string } | null
+}
+
+interface CourseOption {
+  id: string
+  title: string
+}
+
+interface LessonOption {
+  id: string
+  title: string
 }
 
 interface SubscriptionInfo {
@@ -54,13 +65,22 @@ export default function LiveClassroomPage() {
   const [sessions, setSessions] = useState<LiveSession[]>([])
   const [subInfo, setSubInfo] = useState<SubscriptionInfo | null>(null)
   const [loading, setLoading] = useState(true)
+  const [loadError, setLoadError] = useState<string | null>(null)
   const [creating, setCreating] = useState(false)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [courses, setCourses] = useState<CourseOption[]>([])
+  const [lessons, setLessons] = useState<LessonOption[]>([])
+  const [optionsLoading, setOptionsLoading] = useState(false)
+  const [optionsError, setOptionsError] = useState<string | null>(null)
   const [form, setForm] = useState({
     title: "",
     description: "",
+    courseId: "",
+    lessonId: "",
     scheduledAt: "",
     durationMinutes: "60",
+    maxParticipants: "50",
+    waitingRoom: true,
   })
 
   const load = useCallback(async () => {
@@ -69,13 +89,17 @@ export default function LiveClassroomPage() {
         fetch("/api/live-sessions", { cache: "no-store" }),
         fetch("/api/subscriptions/me", { cache: "no-store" }),
       ])
+      if (!sessionsRes.ok) {
+        const errorData = await sessionsRes.json().catch(() => ({}))
+        throw new Error(errorData.error || "Unable to load live classes")
+      }
       const sessionsData = await sessionsRes.json().catch(() => ({}))
       const subData = await subRes.json().catch(() => ({}))
       setSessions(sessionsData.sessions || [])
       setSubInfo(subRes.ok ? subData : null)
-    } catch {
-      setSessions([])
-      setSubInfo(null)
+      setLoadError(null)
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : "Unable to load live classes")
     } finally {
       setLoading(false)
     }
@@ -89,9 +113,45 @@ export default function LiveClassroomPage() {
   const canJoin = subInfo?.liveClassroomJoin || canHost
   const isStudent = subInfo?.role === "student" || user?.role === "student"
 
+  const openScheduleDialog = async () => {
+    setDialogOpen(true)
+    setOptionsLoading(true)
+    setOptionsError(null)
+    try {
+      const response = await fetch("/api/live-sessions/options", { cache: "no-store" })
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Unable to load courses")
+      setCourses(result.courses || [])
+    } catch (error) {
+      setOptionsError(error instanceof Error ? error.message : "Unable to load courses")
+    } finally {
+      setOptionsLoading(false)
+    }
+  }
+
+  const selectCourse = async (courseId: string) => {
+    setForm((current) => ({ ...current, courseId, lessonId: "" }))
+    setLessons([])
+    if (!courseId) return
+    try {
+      const response = await fetch(
+        `/api/live-sessions/options?courseId=${encodeURIComponent(courseId)}`,
+        { cache: "no-store" },
+      )
+      const result = await response.json()
+      if (!response.ok) throw new Error(result.error || "Unable to load lessons")
+      setLessons(result.lessons || [])
+    } catch (error) {
+      toast({
+        title: error instanceof Error ? error.message : "Unable to load lessons",
+        variant: "destructive",
+      })
+    }
+  }
+
   const createSession = async () => {
-    if (!form.title.trim() || !form.scheduledAt) {
-      toast({ title: "Title and schedule time are required", variant: "destructive" })
+    if (!form.title.trim() || !form.scheduledAt || !form.courseId) {
+      toast({ title: "Title, course and scheduled time are required", variant: "destructive" })
       return
     }
     setCreating(true)
@@ -102,8 +162,12 @@ export default function LiveClassroomPage() {
         body: JSON.stringify({
           title: form.title,
           description: form.description,
+          courseId: form.courseId,
+          lessonId: form.lessonId || undefined,
           scheduledAt: new Date(form.scheduledAt).toISOString(),
           durationMinutes: Number(form.durationMinutes) || 60,
+          maxParticipants: Number(form.maxParticipants) || 50,
+          waitingRoom: form.waitingRoom,
         }),
       })
       const data = await res.json()
@@ -119,9 +183,24 @@ export default function LiveClassroomPage() {
         }
         throw new Error(data.error || "Failed to create session")
       }
-      toast({ title: "Live class scheduled" })
+      toast({
+        title: data.notificationWarning ? "Class scheduled; alerts could not be sent" : "Live class scheduled",
+        description: data.notificationWarning
+          ? "Students can still find the session on their classroom dashboard."
+          : undefined,
+        variant: data.notificationWarning ? "destructive" : "default",
+      })
       setDialogOpen(false)
-      setForm({ title: "", description: "", scheduledAt: "", durationMinutes: "60" })
+      setForm({
+        title: "",
+        description: "",
+        courseId: "",
+        lessonId: "",
+        scheduledAt: "",
+        durationMinutes: "60",
+        maxParticipants: "50",
+        waitingRoom: true,
+      })
       load()
     } catch (err) {
       toast({
@@ -137,6 +216,7 @@ export default function LiveClassroomPage() {
     if (status === "live") return "bg-green-500/10 text-green-600"
     if (status === "ended") return "bg-muted text-muted-foreground"
     if (status === "cancelled") return "bg-destructive/10 text-destructive"
+    if (status === "failed") return "bg-destructive/10 text-destructive"
     return "bg-primary/10 text-primary"
   }
 
@@ -170,12 +250,10 @@ export default function LiveClassroomPage() {
 
         {canHost ? (
           <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-            <DialogTrigger asChild>
-              <Button className="gap-2">
-                <Plus className="h-4 w-4" />
-                Schedule live class
-              </Button>
-            </DialogTrigger>
+            <Button className="gap-2" onClick={openScheduleDialog}>
+              <Plus className="h-4 w-4" />
+              Schedule live class
+            </Button>
             <DialogContent>
               <DialogHeader>
                 <DialogTitle>Schedule a live class</DialogTitle>
@@ -183,6 +261,7 @@ export default function LiveClassroomPage() {
               <div className="space-y-4 pt-2">
                 <Input
                   placeholder="Session title"
+                  maxLength={160}
                   value={form.title}
                   onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 />
@@ -191,20 +270,81 @@ export default function LiveClassroomPage() {
                   value={form.description}
                   onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
                 />
+                <label className="block space-y-1 text-sm">
+                  <span>Course</span>
+                  <select
+                    className="h-10 w-full rounded-md border border-input bg-background px-3"
+                    value={form.courseId}
+                    disabled={optionsLoading}
+                    onChange={(e) => selectCourse(e.target.value)}
+                  >
+                    <option value="">
+                      {optionsLoading ? "Loading courses…" : "Select a course"}
+                    </option>
+                    {courses.map((course) => (
+                      <option key={course.id} value={course.id}>{course.title}</option>
+                    ))}
+                  </select>
+                </label>
+                {form.courseId && (
+                  <label className="block space-y-1 text-sm">
+                    <span>Lesson (optional)</span>
+                    <select
+                      className="h-10 w-full rounded-md border border-input bg-background px-3"
+                      value={form.lessonId}
+                      onChange={(e) => setForm((f) => ({ ...f, lessonId: e.target.value }))}
+                    >
+                      <option value="">Entire course</option>
+                      {lessons.map((lesson) => (
+                        <option key={lesson.id} value={lesson.id}>{lesson.title}</option>
+                      ))}
+                    </select>
+                  </label>
+                )}
+                <p className="text-xs text-muted-foreground">
+                  Eligible audience: students with an active or completed enrollment in this course.
+                </p>
                 <Input
                   type="datetime-local"
                   value={form.scheduledAt}
                   onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
                 />
-                <Input
-                  type="number"
-                  min={15}
-                  max={240}
-                  placeholder="Duration (minutes)"
-                  value={form.durationMinutes}
-                  onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))}
-                />
-                <Button onClick={createSession} disabled={creating} className="w-full">
+                <div className="grid grid-cols-2 gap-3">
+                  <label className="space-y-1 text-sm">
+                    <span>Duration (minutes)</span>
+                    <Input
+                      type="number"
+                      min={15}
+                      max={240}
+                      value={form.durationMinutes}
+                      onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))}
+                    />
+                  </label>
+                  <label className="space-y-1 text-sm">
+                    <span>Capacity</span>
+                    <Input
+                      type="number"
+                      min={2}
+                      max={500}
+                      value={form.maxParticipants}
+                      onChange={(e) => setForm((f) => ({ ...f, maxParticipants: e.target.value }))}
+                    />
+                  </label>
+                </div>
+                <label className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={form.waitingRoom}
+                    onChange={(e) => setForm((f) => ({ ...f, waitingRoom: e.target.checked }))}
+                  />
+                  Use a waiting room; tutor admits students
+                </label>
+                {optionsError && <p role="alert" className="text-sm text-destructive">{optionsError}</p>}
+                <Button
+                  onClick={createSession}
+                  disabled={creating || optionsLoading || courses.length === 0}
+                  className="w-full"
+                >
                   {creating ? "Creating…" : "Create session"}
                 </Button>
               </div>
@@ -272,6 +412,11 @@ export default function LiveClassroomPage() {
 
       <div className="space-y-4">
         <h2 className="text-lg font-semibold">Upcoming & recent sessions</h2>
+        {loadError && (
+          <p role="alert" className="rounded-md bg-destructive/10 p-4 text-sm text-destructive">
+            {loadError}
+          </p>
+        )}
         {sessions.length === 0 ? (
           <Card>
             <CardContent className="p-10 text-center text-muted-foreground">
@@ -305,11 +450,28 @@ export default function LiveClassroomPage() {
                     )}
                   </div>
                 </div>
-                <Link href={`/dashboard/live-classroom/${session.id}`}>
-                  <Button variant={session.status === "live" ? "default" : "outline"}>
-                    {session.status === "live" ? "Join now" : "Enter classroom"}
+                {session.status === "live" && isStudent && !canJoin ? (
+                  <Link href="/dashboard/upgrade">
+                    <Button variant="outline">Upgrade to join</Button>
+                  </Link>
+                ) : (session.status === "live" && (isStudent || session.host_id === user?.id)) ||
+                  (canHost && session.status === "scheduled" && session.host_id === user?.id) ? (
+                  <Link href={`/dashboard/live-classroom/${session.id}`}>
+                    <Button variant={session.status === "live" ? "default" : "outline"}>
+                      {session.status === "live"
+                        ? "Join now"
+                        : "Start class"}
+                    </Button>
+                  </Link>
+                ) : (
+                  <Button variant="outline" disabled>
+                    {session.status === "failed"
+                      ? "Class interrupted"
+                      : session.status === "live"
+                        ? "In progress"
+                        : session.status}
                   </Button>
-                </Link>
+                )}
               </CardContent>
             </Card>
           ))
