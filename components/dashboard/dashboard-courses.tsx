@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { useAuth } from "@/contexts/auth-context"
 import { getCourseImageUrl } from "@/lib/course-image"
+import { isCourseCompleted } from "@/lib/course-status"
 
 interface Course {
   id: string
@@ -62,7 +63,7 @@ export function DashboardCourses(_props: DashboardCoursesProps) {
 
     const enrolledAndInProgress = allCourses.filter(course => {
       const isEnrolled = user?.enrolledCourses?.includes(course.id)
-      const isNotCompleted = !user?.completedCourses?.includes(course.id)
+      const isNotCompleted = !isCourseCompleted(user, course.id)
       return isEnrolled && isNotCompleted
     })
 

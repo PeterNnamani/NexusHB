@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
 import { Chatbot } from "@/components/dashboard/chatbot"
-import { Loader2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
 import { DashboardProvider } from "@/contexts/dashboard-context"
 import { normalizeRole } from "@/lib/admin"
+import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton"
+import { Skeleton } from "@/components/ui/skeleton"
 
 export default function DashboardLayout({
   children,
@@ -28,10 +29,13 @@ export default function DashboardLayout({
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-background">
-        <div className="flex flex-col items-center gap-4">
-          <Loader2 className="h-8 w-8 animate-spin text-primary" />
-          <p className="text-muted-foreground">Loading...</p>
+      <div className="min-h-screen bg-background">
+        <div className="mx-auto max-w-7xl space-y-6 px-5 py-8">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-10 w-10 rounded-full" />
+            <Skeleton className="h-5 w-32" />
+          </div>
+          <DashboardPageSkeleton />
         </div>
       </div>
     )

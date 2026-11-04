@@ -1,14 +1,12 @@
 "use client"
 
 import dynamic from "next/dynamic"
+import { useEffect, useState, type ReactNode } from "react"
 import { dashboardPathBase, useDashboardPath } from "@/contexts/dashboard-path-context"
-import { Loader2 } from "lucide-react"
+import { DashboardPageSkeleton } from "@/components/dashboard/dashboard-page-skeleton"
 
-const loading = () => (
-  <div className="flex justify-center py-16">
-    <Loader2 className="h-8 w-8 animate-spin text-primary" />
-  </div>
-)
+const MINIMUM_SHIMMER_DURATION_MS = 3000
+const loading = () => <DashboardPageSkeleton />
 
 const DashboardHome = dynamic(() => import("@/app/dashboard/page"), { loading })
 const BrowseCourses = dynamic(() => import("@/app/dashboard/browse-courses/page"), { loading })
@@ -34,59 +32,105 @@ const MyCourseDetail = dynamic(() => import("@/components/dashboard/my-course-de
 export function DashboardPathRenderer() {
   const { path } = useDashboardPath()
   const base = dashboardPathBase(path)
+  const [minimumElapsedPath, setMinimumElapsedPath] = useState<string | null>(null)
 
+  useEffect(() => {
+    const timer = window.setTimeout(
+      () => setMinimumElapsedPath(path),
+      MINIMUM_SHIMMER_DURATION_MS,
+    )
+    return () => window.clearTimeout(timer)
+  }, [path])
+
+  let page: ReactNode
   const liveMatch = base.match(/^\/dashboard\/live-classroom\/([^/]+)$/)
-  if (liveMatch) return <LiveClassroomRoom />
-
   const courseMatch = base.match(/^\/dashboard\/(my-courses|browse-courses)\/([^/]+)$/)
-  if (courseMatch) {
+  if (liveMatch) {
+    page = <LiveClassroomRoom />
+  } else if (courseMatch) {
     const browseCourses = courseMatch[1] === "browse-courses"
-    return (
+    page = (
       <MyCourseDetail
         courseId={courseMatch[2]}
         backHref={browseCourses ? "/dashboard/browse-courses" : "/dashboard/my-courses"}
       />
     )
+  } else {
+    switch (base) {
+      case "/dashboard":
+        page = <DashboardHome />
+        break
+      case "/dashboard/browse-courses":
+        page = <BrowseCourses />
+        break
+      case "/dashboard/my-courses":
+        page = <MyCourses />
+        break
+      case "/dashboard/tasks-milestones":
+        page = <TasksMilestones />
+        break
+      case "/dashboard/leaderboard":
+        page = <Leaderboard />
+        break
+      case "/dashboard/wallet":
+        page = <Wallet />
+        break
+      case "/dashboard/messages":
+        page = <Messages />
+        break
+      case "/dashboard/live-classroom":
+        page = <LiveClassroom />
+        break
+      case "/dashboard/certificates":
+        page = <Certificates />
+        break
+      case "/dashboard/upgrade":
+        page = <Upgrade />
+        break
+      case "/dashboard/settings":
+        page = <Settings />
+        break
+      case "/dashboard/schedule":
+        page = <Schedule />
+        break
+      case "/dashboard/students":
+        page = <Students />
+        break
+      case "/dashboard/earnings":
+        page = <Earnings />
+        break
+      case "/dashboard/analytics":
+        page = <Analytics />
+        break
+      case "/dashboard/notes":
+        page = <Notes />
+        break
+      case "/dashboard/learning-path":
+        page = <LearningPath />
+        break
+      case "/dashboard/cart":
+        page = <DashboardCart />
+        break
+      default:
+        page = <DashboardHome />
+    }
   }
 
-  switch (base) {
-    case "/dashboard":
-      return <DashboardHome />
-    case "/dashboard/browse-courses":
-      return <BrowseCourses />
-    case "/dashboard/my-courses":
-      return <MyCourses />
-    case "/dashboard/tasks-milestones":
-      return <TasksMilestones />
-    case "/dashboard/leaderboard":
-      return <Leaderboard />
-    case "/dashboard/wallet":
-      return <Wallet />
-    case "/dashboard/messages":
-      return <Messages />
-    case "/dashboard/live-classroom":
-      return <LiveClassroom />
-    case "/dashboard/certificates":
-      return <Certificates />
-    case "/dashboard/upgrade":
-      return <Upgrade />
-    case "/dashboard/settings":
-      return <Settings />
-    case "/dashboard/schedule":
-      return <Schedule />
-    case "/dashboard/students":
-      return <Students />
-    case "/dashboard/earnings":
-      return <Earnings />
-    case "/dashboard/analytics":
-      return <Analytics />
-    case "/dashboard/notes":
-      return <Notes />
-    case "/dashboard/learning-path":
-      return <LearningPath />
-    case "/dashboard/cart":
-      return <DashboardCart />
-    default:
-      return <DashboardHome />
-  }
+  const ready = minimumElapsedPath === path
+
+  return (
+    <div className="relative min-h-[65vh]" aria-busy={!ready}>
+      <div
+        className={ready ? "" : "pointer-events-none absolute inset-0 overflow-hidden opacity-0"}
+        aria-hidden={!ready}
+      >
+        {page}
+      </div>
+      {!ready && (
+        <div className="absolute inset-0 z-10 bg-background">
+          <DashboardPageSkeleton />
+        </div>
+      )}
+    </div>
+  )
 }

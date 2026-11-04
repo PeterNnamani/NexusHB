@@ -23,6 +23,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { CourseLearning } from "@/components/dashboard/course-learning"
 import { AdminCourses } from "@/components/admin/admin-courses"
 import { canTeachCourses } from "@/lib/admin"
+import { isCourseCompleted } from "@/lib/course-status"
 import { useToast } from "@/hooks/use-toast"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { GraduationCap, PenLine } from "lucide-react"
@@ -211,7 +212,7 @@ export default function MyCoursesPage() {
 
   // Function to get actual course status based on completion
   const getActualStatus = (courseId: string) => {
-    if (user?.completedCourses?.includes(courseId)) {
+    if (isCourseCompleted(user, courseId)) {
       return "completed"
     }
     return "in-progress"
@@ -393,7 +394,14 @@ export default function MyCoursesPage() {
                       variant={actualStatus === "completed" ? "default" : "secondary"}
                       className={`h-5 px-1.5 text-[10px] ${actualStatus === "completed" ? "bg-green-500" : ""}`}
                     >
-                      {actualStatus === "completed" ? "Done" : "Active"}
+                      {actualStatus === "completed" ? (
+                        <span className="inline-flex items-center gap-1">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Done
+                        </span>
+                      ) : (
+                        "Active"
+                      )}
                     </Badge>
                     <div className="flex items-center gap-0.5 text-[11px] text-white">
                       <Star className="h-3 w-3 fill-amber-400 text-amber-400" />

@@ -16,6 +16,7 @@ import {
   NEWS_SLUG_COOKIE,
   SITE_VIEW_COOKIE,
 } from "@/lib/masked-routing";
+import { isCourseCompleted } from "@/lib/course-status";
 
 interface User {
   id: string;
@@ -531,7 +532,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           [courseId]: normalizedProgress,
         };
 
-        const updatedUser = { ...prevUser, courseProgress };
+        const shouldMarkCompleted =
+          normalizedProgress >= 100 || isCourseCompleted(prevUser, courseId);
+
+        const completedCourses = shouldMarkCompleted
+          ? [...new Set([...(prevUser.completedCourses || []), courseId])]
+          : prevUser.completedCourses;
+
+        const updatedUser = {
+          ...prevUser,
+          courseProgress,
+          completedCourses,
+        };
         localStorage.setItem("nexus_user", JSON.stringify(updatedUser));
         didChange = true;
         snapshot = updatedUser;
@@ -543,12 +555,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const normalizedProgress = Math.min(Math.max(progress, 0), 100);
         void supabase
           .from("users")
-          .update({ course_progress: u.courseProgress })
+          .update({
+            course_progress: u.courseProgress,
+            completed_courses: u.completedCourses,
+          })
           .eq("id", u.id)
           .then(() => {
             void supabase
               .from("enrollments")
-              .update({ progress: normalizedProgress })
+              .update({
+                progress: normalizedProgress,
+                status: normalizedProgress >= 100 ? "completed" : "in_progress",
+                completed_at: normalizedProgress >= 100 ? new Date().toISOString() : null,
+              })
               .eq("user_id", u.id)
               .eq("course_id", courseId);
           });

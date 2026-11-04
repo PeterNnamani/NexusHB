@@ -27,6 +27,7 @@ import { toEmbedVideoUrl } from "@/lib/video-url"
 import { getCourseImageUrl } from "@/lib/course-image"
 import { CourseAssessmentPanel } from "@/components/dashboard/course-assessment-panel"
 import { buildRefKey, type AssessmentKind, type SubmissionBody } from "@/lib/assessments"
+import { isCourseCompleted } from "@/lib/course-status"
 
 interface Video {
   id: string
@@ -199,9 +200,9 @@ export function CourseLearning({ courseId, onBack }: CourseLearningProps) {
 
   const progressPercentage = useMemo(() => {
     if (!course || totalLessons === 0) return 0
-    if (user?.completedCourses?.includes(course.id)) return 100
+    if (isCourseCompleted(user, course.id)) return 100
     return Math.round((completedLessons.size / totalLessons) * 100)
-  }, [course, totalLessons, completedLessons.size, user?.completedCourses])
+  }, [course, totalLessons, completedLessons.size, user])
 
   const markLessonComplete = useCallback(
     async (lessonId: string) => {

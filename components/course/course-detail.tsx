@@ -27,6 +27,7 @@ import { useAuth } from "@/contexts/auth-context"
 import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { getCourseImageUrl } from "@/lib/course-image"
+import { isCourseCompleted } from "@/lib/course-status"
 import { PaymentModal } from "@/components/payment-modal"
 
 export interface DetailVideo {
@@ -87,7 +88,7 @@ export function CourseDetail({
   const { toast } = useToast()
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
-  const isCompleted = user?.completedCourses?.includes(course.id) ?? false
+  const isCompleted = isCourseCompleted(user, course.id)
   const inCart = isInCart(course.id)
   const completion = isEnrolled ? (isCompleted ? 100 : user?.courseProgress?.[course.id] ?? 0) : 0
   const imageUrl = getCourseImageUrl(course.image)
