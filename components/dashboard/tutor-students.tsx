@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react"
 import Link from "next/link"
+import { DashboardNavLink } from "@/components/site/dashboard-nav-link"
 import { Users, Search, MessageSquare, BookOpen, Loader2 } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -93,9 +94,9 @@ export function TutorStudents() {
           <p className="text-muted-foreground mt-1">
             Students appear here once they enroll in your published courses.
           </p>
-          <Link href="/dashboard/my-courses?view=created">
+          <DashboardNavLink href="/dashboard/my-courses?view=created">
             <Button className="mt-4">Manage your courses</Button>
-          </Link>
+          </DashboardNavLink>
         </div>
       ) : (
         <div className="space-y-4">

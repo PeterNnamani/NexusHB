@@ -1,8 +1,8 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter, useSearchParams } from "next/navigation"
-import Link from "next/link"
+import { useDashboardPath, useDashboardQuery } from "@/contexts/dashboard-path-context"
+import { DashboardNavLink } from "@/components/site/dashboard-nav-link"
 import { 
   BookOpen, 
   Clock, 
@@ -64,14 +64,20 @@ export default function MyCoursesPage() {
   const [filter, setFilter] = useState<FilterStatus>("all")
   const [searchQuery, setSearchQuery] = useState("")
   const [selectedCourseId, setSelectedCourseId] = useState<string | null>(null)
+  const [manageCourseId, setManageCourseId] = useState<string | null>(null)
   const [enrolledCourses, setEnrolledCourses] = useState<Course[]>([])
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [verifyingPayment, setVerifyingPayment] = useState(false)
   const { user, isLoading: authLoading } = useAuth()
-  const router = useRouter()
-  const searchParams = useSearchParams()
+  const { navigate } = useDashboardPath()
+  const searchParams = useDashboardQuery()
   const { toast } = useToast()
+
+  const replaceMyCourses = (params: URLSearchParams) => {
+    const qs = params.toString()
+    navigate(qs ? `/dashboard/my-courses?${qs}` : "/dashboard/my-courses")
+  }
 
   // Load catalog + enrollments in parallel
   useEffect(() => {
@@ -103,7 +109,7 @@ export default function MyCoursesPage() {
         const enrolledIds = new Set(
           (enrollData.courseIds || []).map((id: string | number) => String(id)).filter(Boolean),
         )
-        setEnrolledCourses(catalog.filter((course) => enrolledIds.has(course.id)))
+        setEnrolledCourses(catalog.filter((course) => enrolledIds.has(String(course.id))))
       } catch (error) {
         console.error("Failed to load my courses:", error)
         toast({
@@ -129,19 +135,23 @@ export default function MyCoursesPage() {
         description: "Welcome to your new course. Start learning now!",
       })
       // Clean up URL
-      router.replace('/dashboard/my-courses')
+      replaceMyCourses(new URLSearchParams())
     }
-  }, [searchParams, toast, router])
+  }, [searchParams, toast, navigate])
 
   useEffect(() => {
-    const courseId = searchParams.get('courseId')
-    if (courseId) {
-      setSelectedCourseId(courseId)
-    }
-    const view = searchParams.get('view')
-    if (view === 'created' || view === 'purchased') {
+    const courseId = searchParams.get("courseId")
+    const view = searchParams.get("view")
+    if (view === "created" || view === "purchased") {
       setCourseView(view)
     }
+    if (view === "created") {
+      setSelectedCourseId(null)
+      setManageCourseId(courseId)
+      return
+    }
+    setManageCourseId(null)
+    setSelectedCourseId(courseId)
   }, [searchParams])
 
   const isTeacher = canTeachCourses(user?.role)
@@ -149,8 +159,9 @@ export default function MyCoursesPage() {
   const switchView = (view: CourseView) => {
     setCourseView(view)
     const params = new URLSearchParams(searchParams.toString())
-    params.set('view', view)
-    router.replace(`/dashboard/my-courses?${params.toString()}`)
+    params.set("view", view)
+    if (view !== "created") params.delete("courseId")
+    replaceMyCourses(params)
   }
 
   const verifyPayment = async (reference: string) => {
@@ -178,7 +189,7 @@ export default function MyCoursesPage() {
           setEnrolledCourses(enrolled)
         }
         // Clean up URL
-        router.replace('/dashboard/my-courses')
+        replaceMyCourses(new URLSearchParams())
       } else {
         toast({
           title: "Payment Verification Failed",
@@ -240,8 +251,7 @@ export default function MyCoursesPage() {
             setSelectedCourseId(null)
             const params = new URLSearchParams(searchParams.toString())
             params.delete("courseId")
-            const qs = params.toString()
-            router.replace(qs ? `/dashboard/my-courses?${qs}` : "/dashboard/my-courses")
+            replaceMyCourses(params)
           }}
         />
       ) : (
@@ -284,7 +294,7 @@ export default function MyCoursesPage() {
           </div>
 
           {isTeacher && courseView === "created" ? (
-            <AdminCourses tutorMode />
+            <AdminCourses tutorMode expandCourseId={manageCourseId} />
           ) : (
           <>
           {/* Stats */}
@@ -443,7 +453,7 @@ export default function MyCoursesPage() {
                       setSelectedCourseId(course.id)
                       const params = new URLSearchParams(searchParams.toString())
                       params.set("courseId", course.id)
-                      router.replace(`/dashboard/my-courses?${params.toString()}`)
+                      replaceMyCourses(params)
                     }}
                   >
                     {actualStatus === "completed" ? "Review" : "Continue"}
@@ -463,9 +473,9 @@ export default function MyCoursesPage() {
                   ? "Browse the catalog or switch to Created to publish your own courses."
                   : "Try adjusting your search or filter criteria"}
               </p>
-              <Link href="/dashboard/browse-courses">
+              <DashboardNavLink href="/dashboard/browse-courses">
                 <Button className="mt-4">Browse courses</Button>
-              </Link>
+              </DashboardNavLink>
             </div>
           )}
           </>

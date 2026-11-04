@@ -1,7 +1,6 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useRouter } from "next/navigation"
 import { Clock, Users, Star, Grid, List, ShoppingCart, Play, PenLine, BookOpen, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -11,7 +10,11 @@ import { useCart } from "@/contexts/cart-context"
 import { useToast } from "@/hooks/use-toast"
 import { getCourseImageUrl } from "@/lib/course-image"
 import { useFilter } from "@/contexts/filter-context"
-import { useDashboardPathOptional } from "@/contexts/dashboard-path-context"
+import {
+  continueCoursePath,
+  manageCoursePath,
+  useDashboardNavigate,
+} from "@/hooks/use-dashboard-navigate"
 import { CoursesFilter } from "@/components/courses/courses-filter"
 import { CategoryBadge } from "@/components/category-badge"
 import {
@@ -56,21 +59,15 @@ export function CoursesGrid() {
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid")
   const [sortBy, setSortBy] = useState("popular")
   const { user } = useAuth()
-  const router = useRouter()
-  const dashboardPath = useDashboardPathOptional()
+  const navigateDashboard = useDashboardNavigate()
   const { toast } = useToast()
   const isTutor = canTeachCourses(user?.role)
   const { addToCart, isInCart, hydrated } = useCart()
 
   const isOwnCourse = (course: JsonCourse) =>
-    isTutor && Boolean(user?.id && course.instructorId === user.id)
-  const navigateDashboard = (path: string) => {
-    if (dashboardPath) {
-      dashboardPath.navigate(path)
-      return
-    }
-    router.push(path)
-  }
+    isTutor && Boolean(user?.id && course.instructorId && String(course.instructorId) === String(user.id))
+  const isEnrolledIn = (course: JsonCourse) =>
+    (user?.enrolledCourses ?? []).some((id) => String(id) === String(course.id))
   const {
     searchQuery,
     selectedCategories,
@@ -254,7 +251,7 @@ export function CoursesGrid() {
       {viewMode === "grid" && filteredCourses.length > 0 ? (
         <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {filteredCourses.map((course) => {
-            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
+            const isEnrolled = isEnrolledIn(course)
             const ownCourse = isOwnCourse(course)
             return (
               <div key={course.id} className="group min-w-0">
@@ -307,7 +304,7 @@ export function CoursesGrid() {
                         <Button
                           size="sm"
                           className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
-                          onClick={() => navigateDashboard("/dashboard/my-courses?view=created")}
+                          onClick={() => navigateDashboard(manageCoursePath(course.id))}
                         >
                           <PenLine className="h-3 w-3" />
                           Manage
@@ -316,11 +313,7 @@ export function CoursesGrid() {
                         <Button
                           size="sm"
                           className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
-                          onClick={() =>
-                            navigateDashboard(
-                              `/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`,
-                            )
-                          }
+                          onClick={() => navigateDashboard(continueCoursePath(course.id))}
                         >
                           <Play className="h-3 w-3" />
                           Continue
@@ -355,7 +348,7 @@ export function CoursesGrid() {
       ) : filteredCourses.length > 0 ? (
         <div className="space-y-3">
           {filteredCourses.map((course) => {
-            const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
+            const isEnrolled = isEnrolledIn(course)
             const ownCourse = isOwnCourse(course)
             return (
               <div key={course.id} className="group">
@@ -405,7 +398,7 @@ export function CoursesGrid() {
                         <Button
                           size="sm"
                           className="h-8 gap-1.5 text-xs"
-                          onClick={() => navigateDashboard("/dashboard/my-courses?view=created")}
+                          onClick={() => navigateDashboard(manageCoursePath(course.id))}
                         >
                           <PenLine className="h-3.5 w-3.5" />
                           Manage
@@ -414,11 +407,7 @@ export function CoursesGrid() {
                         <Button
                           size="sm"
                           className="h-8 gap-1.5 text-xs"
-                          onClick={() =>
-                            navigateDashboard(
-                              `/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`,
-                            )
-                          }
+                          onClick={() => navigateDashboard(continueCoursePath(course.id))}
                         >
                           <Play className="h-3.5 w-3.5" />
                           Continue

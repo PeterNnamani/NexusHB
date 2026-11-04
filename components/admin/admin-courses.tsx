@@ -213,7 +213,13 @@ function CourseDetailsFields({
   )
 }
 
-export function AdminCourses({ tutorMode = false }: { tutorMode?: boolean }) {
+export function AdminCourses({
+  tutorMode = false,
+  expandCourseId = null,
+}: {
+  tutorMode?: boolean
+  expandCourseId?: string | null
+}) {
   const { toast } = useToast()
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
@@ -257,6 +263,20 @@ export function AdminCourses({ tutorMode = false }: { tutorMode?: boolean }) {
   useEffect(() => {
     if (!loading && courses.length === 0) setShowCreateForm(true)
   }, [loading, courses.length])
+
+  useEffect(() => {
+    if (!expandCourseId) return
+    setExpanded(expandCourseId)
+    setEditingDetailsId(expandCourseId)
+    setShowCreateForm(false)
+    const timer = window.setTimeout(() => {
+      document.getElementById(`manage-course-${expandCourseId}`)?.scrollIntoView({
+        behavior: "smooth",
+        block: "start",
+      })
+    }, 120)
+    return () => window.clearTimeout(timer)
+  }, [expandCourseId])
 
   const createCourse = async () => {
     if (!form.title.trim()) {
@@ -449,7 +469,11 @@ export function AdminCourses({ tutorMode = false }: { tutorMode?: boolean }) {
             const isExpanded = expanded === course.id
             const isPublishing = publishingIds.has(course.id)
             return (
-            <Card key={course.id} className="rounded-xl overflow-hidden border-border/80 shadow-sm">
+            <Card
+              key={course.id}
+              id={`manage-course-${course.id}`}
+              className="rounded-xl overflow-hidden border-border/80 shadow-sm"
+            >
               <div className="flex flex-col sm:flex-row sm:items-stretch">
                 <div
                   className={`sm:w-28 shrink-0 bg-muted ${isExpanded ? "h-24 sm:min-h-[6rem]" : "h-24"}`}

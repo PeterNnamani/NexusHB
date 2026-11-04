@@ -10,7 +10,8 @@ import {
   Circle,
   Star,
 } from "lucide-react"
-import Link from "next/link"
+import { continueCoursePath } from "@/hooks/use-dashboard-navigate"
+import { DashboardNavLink } from "@/components/site/dashboard-nav-link"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
@@ -107,9 +108,9 @@ export default function LearningPathPage() {
           <GraduationCap className="h-12 w-12 text-muted-foreground mx-auto mb-4 opacity-50" />
           <h3 className="text-lg font-semibold">No learning paths yet</h3>
           <p className="text-muted-foreground mt-1 mb-4">Enroll in courses to build your personalized learning path.</p>
-          <Link href="/dashboard/browse-courses">
+          <DashboardNavLink href="/dashboard/browse-courses">
             <Button>Browse Courses</Button>
-          </Link>
+          </DashboardNavLink>
         </div>
       </div>
     )
@@ -223,11 +224,11 @@ export default function LearningPathPage() {
                               </Badge>
                             </div>
                           </div>
-                          <Link href={`/dashboard/my-courses/${m.id}`}>
+                          <DashboardNavLink href={continueCoursePath(m.id)}>
                             <Button variant={m.status === "completed" ? "outline" : "default"} size="sm">
                               {m.status === "completed" ? "Review" : "Continue"}
                             </Button>
-                          </Link>
+                          </DashboardNavLink>
                         </div>
                       </div>
                     </div>

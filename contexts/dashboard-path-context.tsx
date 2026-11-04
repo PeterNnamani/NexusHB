@@ -5,6 +5,7 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
   useState,
   type ReactNode,
 } from "react"
@@ -19,27 +20,43 @@ type DashboardPathContextValue = {
 const DashboardPathContext = createContext<DashboardPathContextValue | null>(null)
 
 const DEFAULT_PATH = "/dashboard"
+const PENDING_DASHBOARD_PATH_KEY = "nexus_pending_dashboard_path"
+
+/** Survives React Strict Mode remounts after sessionStorage is consumed. */
+let rememberedDashboardPath: string | null = null
+
+function consumePendingDashboardPath(): string | null {
+  if (typeof window === "undefined") return null
+  const pending = sessionStorage.getItem(PENDING_DASHBOARD_PATH_KEY)
+  if (pending?.startsWith("/dashboard")) {
+    sessionStorage.removeItem(PENDING_DASHBOARD_PATH_KEY)
+    return pending
+  }
+  const fromCookie = consumeDashboardPathCookie()
+  if (fromCookie?.startsWith("/dashboard")) return fromCookie
+  return null
+}
 
 export function DashboardPathProvider({ children }: { children: ReactNode }) {
-  const [path, setPath] = useState(DEFAULT_PATH)
+  const [path, setPath] = useState(() => {
+    const consumed = consumePendingDashboardPath()
+    if (consumed) rememberedDashboardPath = consumed
+    return rememberedDashboardPath || DEFAULT_PATH
+  })
 
   useEffect(() => {
-    const pending = sessionStorage.getItem("nexus_pending_dashboard_path")
-    if (pending?.startsWith("/dashboard")) {
-      sessionStorage.removeItem("nexus_pending_dashboard_path")
-      setPath(pending)
-    } else {
-      const fromCookie = consumeDashboardPathCookie()
-      if (fromCookie?.startsWith("/dashboard")) {
-        setPath(fromCookie)
-      }
+    const consumed = consumePendingDashboardPath()
+    if (consumed) {
+      rememberedDashboardPath = consumed
+      setPath(consumed)
     }
     maskBrowserUrl("/")
   }, [])
 
   const navigate = useCallback((next: string) => {
     const normalized = next.startsWith("/dashboard") ? next : DEFAULT_PATH
-    setPath(normalized || DEFAULT_PATH)
+    rememberedDashboardPath = normalized || DEFAULT_PATH
+    setPath(rememberedDashboardPath)
     maskBrowserUrl("/")
   }, [])
 
@@ -63,7 +80,7 @@ export function useDashboardPathOptional() {
 export function useDashboardQuery() {
   const ctx = useContext(DashboardPathContext)
   const raw = ctx?.path.includes("?") ? ctx.path.split("?")[1] : ""
-  return new URLSearchParams(raw)
+  return useMemo(() => new URLSearchParams(raw), [raw])
 }
 
 export function dashboardPathBase(path: string) {

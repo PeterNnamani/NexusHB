@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react"
 import Link from "next/link"
+import { DashboardNavLink } from "@/components/site/dashboard-nav-link"
 import { useAuth } from "@/contexts/auth-context"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -174,12 +175,12 @@ export function TutorDashboard() {
               <CardTitle>Quick Actions</CardTitle>
             </CardHeader>
             <CardContent className="space-y-2">
-              <Link href="/dashboard/my-courses?view=created" className="block">
+              <DashboardNavLink href="/dashboard/my-courses?view=created" className="block">
                 <Button className="w-full justify-start" variant="outline">
                   <BookOpen className="h-4 w-4 mr-2" />
                   Manage Courses
                 </Button>
-              </Link>
+              </DashboardNavLink>
               <Link href="/dashboard/students" className="block">
                 <Button className="w-full justify-start" variant="outline">
                   <Users className="h-4 w-4 mr-2" />

@@ -2,6 +2,7 @@
 
 import { useState } from "react"
 import Link from "next/link"
+import { continueCoursePath, useDashboardNavigate } from "@/hooks/use-dashboard-navigate"
 import { ArrowLeft, Download, BookOpen, CreditCard, Star, Clock, Users, PlayCircle } from "lucide-react"
 import { Badge } from "@/components/ui/badge"
 import { Button } from "@/components/ui/button"
@@ -63,6 +64,7 @@ export function CourseDetail({
   onBackClick,
 }: CourseDetailProps) {
   const { user } = useAuth()
+  const goDashboard = useDashboardNavigate()
   const [showPaymentModal, setShowPaymentModal] = useState(false)
   const isEnrolled = user?.enrolledCourses?.includes(course.id) ?? false
   const isCompleted = user?.completedCourses?.includes(course.id) ?? false
@@ -109,12 +111,10 @@ export function CourseDetail({
                   <span className="text-sm font-medium">{completion}%</span>
                 </div>
               </div>
-              <Link href={`/dashboard/my-courses?courseId=${encodeURIComponent(course.id)}`}>
-                <Button size="lg">
-                  <PlayCircle className="mr-2 h-4 w-4" />
-                  {isCompleted ? "Review Course" : "Continue Learning"}
-                </Button>
-              </Link>
+              <Button size="lg" onClick={() => goDashboard(continueCoursePath(course.id))}>
+                <PlayCircle className="mr-2 h-4 w-4" />
+                {isCompleted ? "Review Course" : "Continue Learning"}
+              </Button>
             </>
           ) : (
             <div className="flex flex-col gap-3">

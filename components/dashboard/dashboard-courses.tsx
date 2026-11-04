@@ -1,7 +1,9 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import Link from "next/link"
+import { continueCoursePath, useDashboardNavigate } from "@/hooks/use-dashboard-navigate"
+import { DashboardNavLink } from "@/components/site/dashboard-nav-link"
+import { SiteNavLink } from "@/components/site/site-nav-link"
 import { Play, Clock, ArrowRight, BookOpen } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Progress } from "@/components/ui/progress"
@@ -22,11 +24,12 @@ interface DashboardCoursesProps {
   onCourseSelect?: (courseId: string) => void
 }
 
-export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
+export function DashboardCourses(_props: DashboardCoursesProps) {
   const [courses, setCourses] = useState<Course[]>([])
   const [loading, setLoading] = useState(true)
   const [allCourses, setAllCourses] = useState<Course[]>([])
   const { user } = useAuth()
+  const goDashboard = useDashboardNavigate()
 
   // Load all courses from the database once
   useEffect(() => {
@@ -78,12 +81,12 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
     <div className="glass-card rounded-xl p-5 sm:p-6">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-xl font-semibold">Continue Learning</h2>
-        <Link href="/dashboard/my-courses">
+        <DashboardNavLink href="/dashboard/my-courses">
           <Button variant="ghost" size="sm" className="text-primary">
             View All
             <ArrowRight className="ml-1 h-4 w-4" />
           </Button>
-        </Link>
+        </DashboardNavLink>
       </div>
 
       <div className="space-y-4">
@@ -97,11 +100,11 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
                 ? "You've completed all your enrolled courses! 🎉"
                 : "No courses enrolled yet. Browse our catalog to get started!"}
             </p>
-            <Link href="/courses">
+            <SiteNavLink href="/courses">
               <Button variant="outline" className="border-border/80">
                 Explore Courses
               </Button>
-            </Link>
+            </SiteNavLink>
           </div>
         ) : (
           courses.map((course) => {
@@ -119,7 +122,7 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
                     className="w-full h-full object-cover"
                   />
                   <button 
-                    onClick={() => onCourseSelect?.(course.id)}
+                    onClick={() => goDashboard(continueCoursePath(course.id))}
                     className="absolute inset-0 flex items-center justify-center bg-background/60 opacity-0 hover:opacity-100 transition-opacity"
                   >
                     <div className="w-12 h-12 rounded-full bg-primary flex items-center justify-center">
@@ -156,10 +159,10 @@ export function DashboardCourses({ onCourseSelect }: DashboardCoursesProps) {
                   <Button 
                     size="sm" 
                     className="rounded-full"
-                    onClick={() => onCourseSelect?.(course.id)}
+                    onClick={() => goDashboard(continueCoursePath(course.id))}
                   >
                     <Play className="h-4 w-4 mr-1" fill="currentColor" />
-                    Learn
+                    Continue
                   </Button>
                 </div>
               </div>
