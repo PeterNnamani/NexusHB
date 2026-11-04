@@ -2,9 +2,9 @@
 
 import "@livekit/components-styles"
 import { useCallback, useEffect, useRef, useState } from "react"
-import Link from "next/link"
 import { useParams } from "next/navigation"
 import { useDashboardPathOptional } from "@/contexts/dashboard-path-context"
+import { useDashboardNavigate } from "@/hooks/use-dashboard-navigate"
 import { ArrowLeft, Loader2, Radio, Square, UserCheck, UserX } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -46,10 +46,13 @@ interface RoomCredentials {
 export default function LiveClassroomRoomPage() {
   const params = useParams()
   const dashPath = useDashboardPathOptional()
+  const navigateDashboard = useDashboardNavigate()
   const sessionId =
     (params.id as string | undefined) ||
-    dashPath?.path.match(/^\/dashboard\/live-classroom\/([^/]+)$/)?.[1] ||
+    dashPath?.path.match(/^\/dashboard\/live-classroom\/([^/?]+)/)?.[1] ||
     ""
+  const shouldStartOnOpen =
+    new URLSearchParams(dashPath?.path.split("?")[1] || "").get("start") === "1"
 
   const [data, setData] = useState<SessionPayload | null>(null)
   const [credentials, setCredentials] = useState<RoomCredentials | null>(null)
@@ -60,6 +63,7 @@ export default function LiveClassroomRoomPage() {
   const [error, setError] = useState<string | null>(null)
   const [roomError, setRoomError] = useState<string | null>(null)
   const joinTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const autoStartRequested = useRef(false)
 
   const loadSession = useCallback(async () => {
     const response = await fetch(`/api/live-sessions/${sessionId}`, { cache: "no-store" })
@@ -150,7 +154,7 @@ export default function LiveClassroomRoomPage() {
     return () => clearInterval(interval)
   }, [data?.isHost, data?.session.status, refreshParticipants])
 
-  const updateSessionStatus = async (status: "live" | "ended" | "cancelled" | "failed") => {
+  const updateSessionStatus = useCallback(async (status: "live" | "ended" | "cancelled" | "failed") => {
     setWorking(true)
     setRoomError(null)
     try {
@@ -173,7 +177,20 @@ export default function LiveClassroomRoomPage() {
     } finally {
       setWorking(false)
     }
-  }
+  }, [getHostToken, sessionId])
+
+  useEffect(() => {
+    if (
+      !shouldStartOnOpen ||
+      !data?.isHost ||
+      data.session.status !== "scheduled" ||
+      autoStartRequested.current
+    ) return
+
+    autoStartRequested.current = true
+    navigateDashboard(`/dashboard/live-classroom/${data.session.id}`)
+    void updateSessionStatus("live")
+  }, [data, navigateDashboard, shouldStartOnOpen, updateSessionStatus])
 
   const moderate = async (participantId: string, action: "admit" | "remove") => {
     setRoomError(null)
@@ -233,9 +250,9 @@ export default function LiveClassroomRoomPage() {
     return (
       <div className="mx-auto max-w-md space-y-4 py-16 text-center">
         <p className="text-destructive">{error || "Session not found"}</p>
-        <Link href="/dashboard/live-classroom">
-          <Button variant="outline">Back to Live Classroom</Button>
-        </Link>
+        <Button variant="outline" onClick={() => navigateDashboard("/dashboard/live-classroom")}>
+          Back to Live Classroom
+        </Button>
       </div>
     )
   }
@@ -247,12 +264,15 @@ export default function LiveClassroomRoomPage() {
     <div className="space-y-4 -m-4 lg:-m-8">
       <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-4 lg:px-8">
         <div className="flex items-center gap-3">
-          <Link href="/dashboard/live-classroom">
-            <Button variant="ghost" size="sm" className="gap-2">
-              <ArrowLeft className="h-4 w-4" />
-              Back
-            </Button>
-          </Link>
+          <Button
+            variant="ghost"
+            size="sm"
+            className="gap-2"
+            onClick={() => navigateDashboard("/dashboard/live-classroom")}
+          >
+            <ArrowLeft className="h-4 w-4" />
+            Back
+          </Button>
           <div>
             <h1 className="text-lg font-semibold">{session.title}</h1>
             <p className="text-xs text-muted-foreground">
@@ -282,7 +302,7 @@ export default function LiveClassroomRoomPage() {
               onClick={() => updateSessionStatus("live")}
             >
               <Radio className="h-4 w-4" />
-              Start class
+              {working ? "Opening classroom…" : "Start class"}
             </Button>
           </div>
         )}
@@ -343,9 +363,13 @@ export default function LiveClassroomRoomPage() {
               ? "This class was cancelled."
               : "This class ended. Attendance is recorded from media-service connection events."}
           {session.course_id && <div className="mt-3">
-            <Link href={`/dashboard/my-courses/${session.course_id}`}>
-              <Button size="sm" variant="outline">Back to course</Button>
-            </Link>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => navigateDashboard(`/dashboard/my-courses/${session.course_id}`)}
+            >
+              Back to course
+            </Button>
           </div>}
         </div>
       )}
@@ -355,7 +379,7 @@ export default function LiveClassroomRoomPage() {
           You are in the waiting room. The tutor will admit you shortly.
         </div>
       )}
-      {session.status === "live" && !waiting && !credentials && !isHost && !roomError && (
+      {session.status === "live" && !waiting && !credentials && !roomError && (
         <div className="mx-4 rounded-md bg-muted p-5 text-sm lg:mx-8">
           Connecting to the classroom…
         </div>

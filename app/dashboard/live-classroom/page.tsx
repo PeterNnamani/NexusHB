@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useState } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
+import { useDashboardNavigate } from "@/hooks/use-dashboard-navigate"
 import {
   Video,
   Plus,
@@ -66,6 +67,7 @@ function toLocalDateTimeInputValue(date: Date) {
 export default function LiveClassroomPage() {
   const { user } = useAuth()
   const router = useRouter()
+  const navigateDashboard = useDashboardNavigate()
   const { toast } = useToast()
   const [sessions, setSessions] = useState<LiveSession[]>([])
   const [subInfo, setSubInfo] = useState<SubscriptionInfo | null>(null)
@@ -480,13 +482,16 @@ export default function LiveClassroomPage() {
                   </Link>
                 ) : (session.status === "live" && (isStudent || session.host_id === user?.id)) ||
                   (canHost && session.status === "scheduled" && session.host_id === user?.id) ? (
-                  <Link href={`/dashboard/live-classroom/${session.id}`}>
-                    <Button variant={session.status === "live" ? "default" : "outline"}>
-                      {session.status === "live"
-                        ? "Join now"
-                        : "Start class"}
-                    </Button>
-                  </Link>
+                  <Button
+                    variant={session.status === "live" ? "default" : "outline"}
+                    onClick={() =>
+                      navigateDashboard(
+                        `/dashboard/live-classroom/${session.id}${session.status === "scheduled" ? "?start=1" : ""}`,
+                      )
+                    }
+                  >
+                    {session.status === "live" ? "Join now" : "Start class"}
+                  </Button>
                 ) : (
                   <Button variant="outline" disabled>
                     {session.status === "failed"
