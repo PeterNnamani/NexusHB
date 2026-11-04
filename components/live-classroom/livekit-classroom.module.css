@@ -1,0 +1,107 @@
+.shell {
+  background:
+    radial-gradient(ellipse at 50% -20%, rgb(16 185 129 / 12%), transparent 48%),
+    #070b0a;
+  box-shadow: 0 24px 70px rgb(3 10 7 / 22%);
+}
+
+.room {
+  --lk-grid-gap: 0.75rem;
+  --lk-control-bar-height: 76px;
+}
+
+.room:global([data-lk-theme]) {
+  --lk-bg: #090f0d;
+  --lk-bg2: #17211d;
+  --lk-bg3: #202e28;
+  --lk-bg4: #293a32;
+  --lk-bg5: #34493e;
+  --lk-fg: #f3faf6;
+  --lk-fg2: #d7e5dd;
+  --lk-fg3: #a9beb2;
+  --lk-fg4: #82988b;
+  --lk-fg5: #65796d;
+  --lk-border-color: rgb(255 255 255 / 9%);
+  --lk-accent-bg: #10b981;
+  --lk-accent2: #34d399;
+  --lk-accent3: #6ee7b7;
+  --lk-accent4: #a7f3d0;
+  --lk-control-bg: #17211d;
+  --lk-control-hover-bg: #25352d;
+  --lk-control-active-bg: #047857;
+  --lk-control-active-hover-bg: #059669;
+  --lk-danger: #ef4444;
+  --lk-danger2: #f87171;
+  --lk-danger3: #fca5a5;
+  --lk-success: #34d399;
+  --lk-font-family: var(--font-body);
+  --lk-border-radius: 0.75rem;
+  --lk-box-shadow: 0 12px 32px rgb(0 0 0 / 28%);
+}
+
+.room :global(.lk-video-conference) {
+  min-height: 0;
+}
+
+.room :global(.lk-video-conference-inner) {
+  min-height: 0;
+  gap: 0.25rem;
+  padding: 1rem;
+}
+
+.room :global(.lk-grid-layout),
+.room :global(.lk-focus-layout) {
+  min-height: 0;
+  padding: 0.25rem;
+}
+
+.room :global(.lk-participant-tile) {
+  border: 1px solid rgb(255 255 255 / 9%);
+  border-radius: 1rem;
+  background: #111a16;
+  box-shadow: 0 12px 30px rgb(0 0 0 / 20%);
+}
+
+.room :global(.lk-participant-tile[data-lk-speaking="true"]) {
+  box-shadow: 0 0 0 1px rgb(52 211 153 / 28%), 0 14px 36px rgb(0 0 0 / 28%);
+}
+
+.room :global(.lk-participant-metadata-item) {
+  padding: 0.35rem 0.5rem;
+  border: 1px solid rgb(255 255 255 / 10%);
+  border-radius: 0.5rem;
+  background: rgb(5 12 9 / 78%);
+  backdrop-filter: blur(10px);
+}
+
+.room :global(.lk-control-bar) {
+  flex-wrap: wrap;
+  gap: 0.625rem;
+  padding: 1rem 0 0.25rem;
+  border-top: 1px solid rgb(255 255 255 / 8%);
+}
+
+.room :global(.lk-control-bar .lk-button),
+.room :global(.lk-control-bar .lk-disconnect-button) {
+  min-height: 2.75rem;
+  border: 1px solid rgb(255 255 255 / 8%);
+  box-shadow: 0 4px 12px rgb(0 0 0 / 14%);
+  transition: background-color 140ms ease, border-color 140ms ease, transform 140ms ease;
+}
+
+.room :global(.lk-control-bar .lk-button:hover),
+.room :global(.lk-control-bar .lk-disconnect-button:hover) {
+  transform: translateY(-1px);
+  border-color: rgb(52 211 153 / 28%);
+}
+
+@media (max-width: 640px) {
+  .room :global(.lk-video-conference-inner) {
+    padding: 0.625rem;
+  }
+
+  .room :global(.lk-control-bar) {
+    gap: 0.375rem;
+    padding-top: 0.75rem;
+  }
+}

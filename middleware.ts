@@ -61,6 +61,18 @@ export async function middleware(request: NextRequest) {
       return res
     }
 
+    if (path.startsWith("/courses/")) {
+      const courseId = path.replace(/^\/courses\//, "").split("/")[0]
+      res.cookies.set(SITE_VIEW_COOKIE, "dashboard", { maxAge: 15, path: "/" })
+      if (courseId) {
+        res.cookies.set(DASHBOARD_PATH_COOKIE, `/dashboard/browse-courses/${courseId}`, {
+          maxAge: 15,
+          path: "/",
+        })
+      }
+      return res
+    }
+
     const segment = path.split("/")[1] || ""
     const view = SITE_SEGMENT_TO_VIEW[segment]
     if (view) {

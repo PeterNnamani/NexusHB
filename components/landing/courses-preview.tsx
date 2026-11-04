@@ -1,8 +1,8 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import Link from "next/link"
 import { SiteNavLink } from "@/components/site/site-nav-link"
+import { useSiteView } from "@/contexts/site-view-context"
 import { ArrowRight, BookOpen, Clock, Users } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
@@ -26,6 +26,7 @@ interface PreviewCourse {
 }
 
 export function CoursesPreview() {
+  const siteView = useSiteView()
   const [courses, setCourses] = useState<PreviewCourse[]>([])
   const [loading, setLoading] = useState(true)
 
@@ -115,7 +116,12 @@ export function CoursesPreview() {
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-4">
             {displayCourses.map((course) => (
-              <Link key={course.id} href={`/courses/${course.id}`} className="group block h-full">
+              <button
+                key={course.id}
+                type="button"
+                onClick={() => siteView.navigate("course-detail", { courseId: course.id })}
+                className="group block h-full w-full text-left"
+              >
                 <article className="nexus-course-card flex h-full flex-col rounded-2xl p-5 transition-all duration-200 hover:border-primary/30 hover:shadow-lg">
                   <CategoryBadge category={course.category} className="mb-4 w-fit" />
                   <h3 className="mb-3 line-clamp-2 text-base font-semibold leading-snug text-white group-hover:text-primary">
@@ -160,7 +166,7 @@ export function CoursesPreview() {
                     </span>
                   </div>
                 </article>
-              </Link>
+              </button>
             ))}
           </div>
         )}

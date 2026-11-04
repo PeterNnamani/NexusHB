@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server"
 import { createClient as createServerClient } from "@/lib/supabase-server"
 import { userCanAccessFullCourseContent } from "@/lib/course-access"
 import { resolveCourseForRequest } from "@/lib/course-content-server"
+import { getVerifiedTutorIds } from "@/lib/subscription-db"
 
 export const dynamic = "force-dynamic"
 
@@ -16,6 +17,10 @@ export async function GET(
     const {
       data: { user },
     } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Create an account to view course details." }, { status: 401 })
+    }
 
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
     const { data: courseMeta } = await supabase
@@ -38,8 +43,12 @@ export async function GET(
       return NextResponse.json({ course: null, message: "Course not found" }, { status: 404 })
     }
 
+    const verifiedTutorIds = await getVerifiedTutorIds([courseMeta.instructor_id ?? ""])
     return NextResponse.json({
-      course: resolved.course,
+      course: {
+        ...resolved.course,
+        isVerified: verifiedTutorIds.has(courseMeta.instructor_id),
+      },
       access: resolved.access,
     })
   } catch (error) {

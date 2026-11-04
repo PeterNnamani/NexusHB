@@ -1,12 +1,14 @@
 "use client"
 
 import { useState } from "react"
+import "@livekit/components-styles"
 import {
   LiveKitRoom,
   RoomAudioRenderer,
   VideoConference,
 } from "@livekit/components-react"
 import { AlertCircle, Loader2 } from "lucide-react"
+import styles from "./livekit-classroom.module.css"
 
 interface LiveKitClassroomProps {
   serverUrl: string
@@ -22,7 +24,7 @@ export function LiveKitClassroom({
   const [mediaWarning, setMediaWarning] = useState<string | null>(null)
 
   return (
-    <div className="relative h-full min-h-[480px] overflow-hidden rounded-xl bg-slate-950 text-white">
+    <div className={`${styles.shell} relative h-full min-h-[480px] overflow-hidden rounded-2xl text-white`}>
       {mediaWarning && (
         <div
           role="status"
@@ -38,7 +40,7 @@ export function LiveKitClassroom({
         connect
         audio
         video
-        className="lk-theme-dark h-full min-h-[480px]"
+        className={`${styles.room} lk-theme-dark h-full min-h-[480px]`}
         onDisconnected={onLeave}
         onMediaDeviceFailure={(_failure, kind) => {
           setMediaWarning(

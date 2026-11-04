@@ -1,8 +1,9 @@
 import { NextResponse } from "next/server"
 import { createClient } from "@/lib/supabase-server"
-import { getPublicCourses, getTutorBrowseCourses } from "@/lib/courses-db"
+import { getPublicCourses, getTutorBrowseCourses, type PublicCourse } from "@/lib/courses-db"
 import { isStaffRole, normalizeRole } from "@/lib/admin"
 import { PUBLIC_CACHE_TTL_MS, withServerCache } from "@/lib/server-cache"
+import { getVerifiedTutorIds } from "@/lib/subscription-db"
 
 export const dynamic = "force-dynamic"
 
@@ -13,6 +14,7 @@ export async function GET() {
       data: { user },
     } = await supabase.auth.getUser()
 
+    let courses: PublicCourse[] | undefined
     if (user) {
       const { data: profile } = await supabase
         .from("users")
@@ -22,21 +24,31 @@ export async function GET() {
 
       const role = normalizeRole(profile?.role)
       if (isStaffRole(role)) {
-        const courses = await getTutorBrowseCourses(supabase, user.id)
-        return NextResponse.json(
-          { courses },
-          { headers: { "Cache-Control": "private, max-age=30, stale-while-revalidate=60" } },
-        )
+        courses = await getTutorBrowseCourses(supabase, user.id)
       }
     }
 
-    const courses = await withServerCache("public:courses", PUBLIC_CACHE_TTL_MS, getPublicCourses)
+    courses ??= await withServerCache("public:courses", PUBLIC_CACHE_TTL_MS, getPublicCourses)
+    const verifiedTutorIds = await getVerifiedTutorIds(
+      courses.map((course) => course.instructorId ?? ""),
+    )
+    const coursesWithVerification = courses.map((course) => ({
+      ...course,
+      isVerified: Boolean(course.instructorId && verifiedTutorIds.has(course.instructorId)),
+    }))
+
     return NextResponse.json(
-      { courses },
-      { headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=120" } },
+      { courses: coursesWithVerification },
+      {
+        headers: {
+          "Cache-Control": user
+            ? "private, max-age=30, stale-while-revalidate=60"
+            : "public, max-age=60, stale-while-revalidate=120",
+        },
+      },
     )
   } catch (error) {
     console.error("Failed to load courses:", error)
-    return NextResponse.json({ courses: [] }, { status: 200 })
+    return NextResponse.json({ courses: [], message: "Failed to load courses" }, { status: 500 })
   }
 }

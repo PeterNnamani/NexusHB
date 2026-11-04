@@ -8,6 +8,7 @@ import {
   hasLiveClassroomJoinAccess,
   type PlanSlug,
 } from "@/lib/plans"
+import { getSupabaseServiceRoleKey, getSupabaseUrl } from "@/lib/config"
 
 export interface UserSubscription {
   planSlug: string
@@ -79,6 +80,31 @@ export async function getActiveSubscription(
     ),
     audience: definition?.audience || "student",
   }
+}
+
+export async function getVerifiedTutorIds(tutorIds: string[]): Promise<Set<string>> {
+  const uniqueTutorIds = [...new Set(tutorIds.filter(Boolean))]
+  if (uniqueTutorIds.length === 0) return new Set()
+
+  const admin = createClient(getSupabaseUrl(), getSupabaseServiceRoleKey(), {
+    auth: { persistSession: false },
+  })
+  const now = new Date().toISOString()
+  const { data, error } = await admin
+    .from("user_subscriptions")
+    .select("user_id, subscription_plans!inner(slug)")
+    .in("user_id", uniqueTutorIds)
+    .eq("status", "active")
+    .lte("current_period_start", now)
+    .gte("current_period_end", now)
+    .eq("subscription_plans.slug", "tutor_plus")
+    .eq("subscription_plans.active", true)
+
+  if (error) {
+    throw new Error(`Failed to check tutor verification status: ${error.message}`)
+  }
+
+  return new Set((data ?? []).map((subscription) => subscription.user_id))
 }
 
 export interface SubscriptionSummary {

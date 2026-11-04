@@ -10,6 +10,7 @@ import {
 } from "react"
 import {
   clearCookie,
+  COURSE_ID_COOKIE,
   DASHBOARD_PATH_COOKIE,
   maskBrowserUrl,
   NEWS_SLUG_COOKIE,
@@ -22,7 +23,8 @@ import {
 type SiteViewContextValue = {
   view: SiteViewId
   newsSlug: string | null
-  navigate: (view: SiteViewId, opts?: { newsSlug?: string | null }) => void
+  courseId: string | null
+  navigate: (view: SiteViewId, opts?: { newsSlug?: string | null; courseId?: string | null }) => void
 }
 
 const SiteViewContext = createContext<SiteViewContextValue | null>(null)
@@ -30,10 +32,12 @@ const SiteViewContext = createContext<SiteViewContextValue | null>(null)
 export function SiteViewProvider({ children }: { children: ReactNode }) {
   const [view, setView] = useState<SiteViewId>("home")
   const [newsSlug, setNewsSlug] = useState<string | null>(null)
+  const [courseId, setCourseId] = useState<string | null>(null)
 
   useEffect(() => {
     const fromCookie = readCookie(SITE_VIEW_COOKIE)
     const slugCookie = readCookie(NEWS_SLUG_COOKIE)
+    const courseIdCookie = readCookie(COURSE_ID_COOKIE)
 
     if (fromCookie) {
       clearCookie(SITE_VIEW_COOKIE)
@@ -47,15 +51,21 @@ export function SiteViewProvider({ children }: { children: ReactNode }) {
       setNewsSlug(slugCookie)
     }
 
+    if (courseIdCookie) {
+      clearCookie(COURSE_ID_COOKIE)
+      setCourseId(courseIdCookie)
+    }
+
     if (typeof window !== "undefined" && !window.location.pathname.startsWith("/admin")) {
       maskBrowserUrl("/")
     }
   }, [])
 
   const navigate = useCallback(
-    (next: SiteViewId, opts?: { newsSlug?: string | null }) => {
+    (next: SiteViewId, opts?: { newsSlug?: string | null; courseId?: string | null }) => {
       setView(next)
       if (opts?.newsSlug !== undefined) setNewsSlug(opts.newsSlug)
+      setCourseId(next === "course-detail" ? opts?.courseId ?? null : null)
       maskBrowserUrl("/")
       if (typeof window !== "undefined") {
         window.scrollTo({ top: 0, behavior: "smooth" })
@@ -65,7 +75,7 @@ export function SiteViewProvider({ children }: { children: ReactNode }) {
   )
 
   return (
-    <SiteViewContext.Provider value={{ view, newsSlug, navigate }}>
+    <SiteViewContext.Provider value={{ view, newsSlug, courseId, navigate }}>
       {children}
     </SiteViewContext.Provider>
   )

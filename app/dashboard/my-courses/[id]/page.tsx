@@ -1,7 +1,4 @@
-import { notFound } from "next/navigation"
-
-import { getCourseWithContent } from "@/lib/courses-db"
-import { CourseDetail } from "@/components/course/course-detail"
+import { redirect } from "next/navigation"
 
 type MyCoursesPageProps = {
   params: Promise<{
@@ -11,15 +8,5 @@ type MyCoursesPageProps = {
 
 export default async function MyCourseDetailPage({ params }: MyCoursesPageProps) {
   const { id } = await params
-  const course = await getCourseWithContent(id)
-
-  if (!course) {
-    notFound()
-  }
-
-  return (
-    <div className="space-y-8">
-      <CourseDetail course={course} backHref="/dashboard/my-courses" />
-    </div>
-  )
+  redirect(`/dashboard/browse-courses/${encodeURIComponent(id)}`)
 }

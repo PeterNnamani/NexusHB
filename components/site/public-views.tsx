@@ -13,6 +13,7 @@ const loading = () => (
 )
 
 const CoursesView = dynamic(() => import("@/components/site/views/courses-view"), { loading })
+const CourseDetailView = dynamic(() => import("@/components/site/views/course-detail-view"), { loading })
 const ProgramsView = dynamic(() => import("@/components/site/views/programs-view"), { loading })
 const NewsView = dynamic(() => import("@/components/site/views/news-view"), { loading })
 const NewsArticleView = dynamic(() => import("@/components/site/views/news-article-view"), { loading })
@@ -29,6 +30,8 @@ export function PublicViewRenderer() {
   switch (view) {
     case "courses":
       return <CoursesView />
+    case "course-detail":
+      return <CourseDetailView />
     case "programs":
       return <ProgramsView />
     case "news":

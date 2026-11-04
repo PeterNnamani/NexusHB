@@ -38,8 +38,16 @@ export function DashboardPathRenderer() {
   const liveMatch = base.match(/^\/dashboard\/live-classroom\/([^/]+)$/)
   if (liveMatch) return <LiveClassroomRoom />
 
-  const courseMatch = base.match(/^\/dashboard\/my-courses\/([^/]+)$/)
-  if (courseMatch) return <MyCourseDetail courseId={courseMatch[1]} />
+  const courseMatch = base.match(/^\/dashboard\/(my-courses|browse-courses)\/([^/]+)$/)
+  if (courseMatch) {
+    const browseCourses = courseMatch[1] === "browse-courses"
+    return (
+      <MyCourseDetail
+        courseId={courseMatch[2]}
+        backHref={browseCourses ? "/dashboard/browse-courses" : "/dashboard/my-courses"}
+      />
+    )
+  }
 
   switch (base) {
     case "/dashboard":

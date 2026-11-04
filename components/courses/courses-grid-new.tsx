@@ -1,13 +1,11 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { Clock, Users, Star, Grid, List, ShoppingCart, Play, PenLine, BookOpen, ArrowRight } from "lucide-react"
+import { BadgeCheck, Clock, Users, Star, Grid, List, Play, PenLine, BookOpen, ArrowRight } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { useAuth } from "@/contexts/auth-context"
 import { canTeachCourses } from "@/lib/admin"
-import { useCart } from "@/contexts/cart-context"
-import { useToast } from "@/hooks/use-toast"
 import { getCourseImageUrl } from "@/lib/course-image"
 import { useFilter } from "@/contexts/filter-context"
 import {
@@ -41,6 +39,33 @@ interface JsonCourse {
   rating: number
   students: number
   lessons: number
+  isVerified?: boolean
+}
+
+function CourseDetailsButton({
+  courseId,
+  className,
+}: {
+  courseId: string
+  className: string
+}) {
+  const navigateDashboard = useDashboardNavigate()
+  const contents = (
+    <>
+      View course
+      <ArrowRight className="h-3.5 w-3.5" />
+    </>
+  )
+
+  return (
+    <Button
+      size="sm"
+      className={className}
+      onClick={() => navigateDashboard(`/dashboard/browse-courses/${encodeURIComponent(courseId)}`)}
+    >
+      {contents}
+    </Button>
+  )
 }
 
 function matchesRange(value: number, rangeId: string) {
@@ -60,9 +85,7 @@ export function CoursesGrid() {
   const [sortBy, setSortBy] = useState("popular")
   const { user } = useAuth()
   const navigateDashboard = useDashboardNavigate()
-  const { toast } = useToast()
   const isTutor = canTeachCourses(user?.role)
-  const { addToCart, isInCart, hydrated } = useCart()
 
   const isOwnCourse = (course: JsonCourse) =>
     isTutor && Boolean(user?.id && course.instructorId && String(course.instructorId) === String(user.id))
@@ -166,24 +189,6 @@ export function CoursesGrid() {
     sortBy,
   ])
 
-  const handleAddToCart = (course: JsonCourse) => {
-    const added = addToCart({
-      id: course.id,
-      title: course.title,
-      price: course.price,
-      image: getCourseImageUrl(course.image),
-      instructor: course.instructor,
-    })
-    if (added) {
-      toast({
-        title: "Added to cart",
-        description: `${course.title} — open Cart in the header to checkout.`,
-      })
-    } else {
-      toast({ title: "Already in cart", description: course.title })
-    }
-  }
-
   if (loading) {
     return (
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
@@ -264,6 +269,12 @@ export function CoursesGrid() {
                     />
                     <div className="absolute left-2 top-2 flex flex-wrap gap-1">
                       <CategoryBadge category={course.category} />
+                      {course.isVerified && (
+                        <Badge className="gap-1 bg-blue-600 px-1.5 py-0.5 text-[9px] text-white hover:bg-blue-600">
+                          <BadgeCheck className="h-3 w-3" />
+                          Verified
+                        </Badge>
+                      )}
                       {ownCourse && (
                         <span className="rounded bg-background/90 px-1.5 py-0.5 text-[9px] font-semibold text-foreground">
                           Yours
@@ -318,25 +329,11 @@ export function CoursesGrid() {
                           <Play className="h-3 w-3" />
                           Continue
                         </Button>
-                      ) : hydrated && isInCart(course.id) ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px]"
-                          onClick={() => navigateDashboard("/dashboard/cart")}
-                        >
-                          <ShoppingCart className="h-3 w-3" />
-                          Cart
-                        </Button>
                       ) : (
-                        <Button
-                          size="sm"
-                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px] font-medium"
-                          onClick={() => handleAddToCart(course)}
-                        >
-                          Start
-                          <ArrowRight className="h-3 w-3" />
-                        </Button>
+                        <CourseDetailsButton
+                          courseId={course.id}
+                          className="h-7 shrink-0 gap-1 rounded-full px-2.5 text-[10px] font-medium [&_svg]:size-3"
+                        />
                       )}
                     </div>
                   </div>
@@ -363,6 +360,12 @@ export function CoursesGrid() {
                   <div className="flex min-w-0 flex-1 flex-col gap-2 p-3 sm:flex-row sm:items-center sm:gap-4 sm:p-4">
                     <div className="min-w-0 flex-1">
                       <div className="mb-1 flex flex-wrap items-center gap-1.5">
+                        {course.isVerified && (
+                          <Badge className="h-5 gap-1 bg-blue-600 px-1.5 text-[10px] text-white hover:bg-blue-600">
+                            <BadgeCheck className="h-3 w-3" />
+                            Verified
+                          </Badge>
+                        )}
                         {ownCourse && (
                           <Badge className="h-5 bg-primary px-1.5 text-[10px] text-primary-foreground">Yours</Badge>
                         )}
@@ -412,21 +415,11 @@ export function CoursesGrid() {
                           <Play className="h-3.5 w-3.5" />
                           Continue
                         </Button>
-                      ) : hydrated && isInCart(course.id) ? (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          className="h-8 gap-1.5 text-xs"
-                          onClick={() => navigateDashboard("/dashboard/cart")}
-                        >
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          In cart
-                        </Button>
                       ) : (
-                        <Button size="sm" className="h-8 gap-1.5 text-xs" onClick={() => handleAddToCart(course)}>
-                          <ShoppingCart className="h-3.5 w-3.5" />
-                          Add to cart
-                        </Button>
+                        <CourseDetailsButton
+                          courseId={course.id}
+                          className="h-8 gap-1.5 text-xs"
+                        />
                       )}
                     </div>
                   </div>

@@ -31,6 +31,7 @@ export interface PublicCourse {
   rating: number
   students: number
   lessons: number
+  isVerified?: boolean
 }
 
 export interface CourseVideo {

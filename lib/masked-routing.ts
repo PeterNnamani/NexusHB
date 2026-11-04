@@ -1,5 +1,6 @@
 /** Cookie keys — short-lived, consumed on mount by client routers */
 export const SITE_VIEW_COOKIE = "nexus_site_view"
+export const COURSE_ID_COOKIE = "nexus_course_id"
 export const DASHBOARD_PATH_COOKIE = "nexus_dashboard_path"
 export const NEWS_SLUG_COOKIE = "nexus_news_slug"
 export const ADMIN_VIEW_COOKIE = "nexus_admin_view"
@@ -24,6 +25,7 @@ export type AdminViewId =
 export type SiteViewId =
   | "home"
   | "courses"
+  | "course-detail"
   | "programs"
   | "news"
   | "news-article"
@@ -56,6 +58,7 @@ export const ADMIN_SEGMENT_TO_VIEW: Record<string, AdminViewId> = {
 
 export const SITE_SEGMENT_TO_VIEW: Record<string, SiteViewId> = {
   courses: "courses",
+  "course-detail": "course-detail",
   programs: "programs",
   news: "news",
   faq: "faq",

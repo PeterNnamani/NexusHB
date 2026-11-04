@@ -1,11 +1,10 @@
 "use client"
 
-import "@livekit/components-styles"
 import { useCallback, useEffect, useRef, useState } from "react"
 import { useParams } from "next/navigation"
 import { useDashboardPathOptional } from "@/contexts/dashboard-path-context"
 import { useDashboardNavigate } from "@/hooks/use-dashboard-navigate"
-import { ArrowLeft, Loader2, Radio, Square, UserCheck, UserX } from "lucide-react"
+import { ArrowLeft, Loader2, Radio, Square, UserCheck, Users, UserX, Video } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { LiveKitClassroom } from "@/components/live-classroom/livekit-classroom"
@@ -261,28 +260,40 @@ export default function LiveClassroomRoomPage() {
   const isFinished = ["ended", "cancelled", "failed"].includes(session.status)
 
   return (
-    <div className="space-y-4 -m-4 lg:-m-8">
-      <div className="flex flex-wrap items-center justify-between gap-4 px-4 pt-4 lg:px-8">
-        <div className="flex items-center gap-3">
+    <div className="-m-4 min-h-[calc(100vh-var(--dashboard-header-height))] space-y-5 bg-muted/30 pb-6 lg:-m-8">
+      <header className="flex flex-wrap items-center justify-between gap-4 border-b bg-background/90 px-4 py-4 backdrop-blur lg:px-8">
+        <div className="flex min-w-0 items-center gap-3">
           <Button
             variant="ghost"
             size="sm"
-            className="gap-2"
+            className="shrink-0 gap-2"
             onClick={() => navigateDashboard("/dashboard/live-classroom")}
           >
             <ArrowLeft className="h-4 w-4" />
             Back
           </Button>
-          <div>
-            <h1 className="text-lg font-semibold">{session.title}</h1>
-            <p className="text-xs text-muted-foreground">
-              {session.courses?.title || "Nexus Live Classroom"} ·{" "}
-              {new Date(session.scheduled_at).toLocaleString()}
-            </p>
+          <div className="flex min-w-0 items-center gap-3">
+            <div className="hidden rounded-xl bg-primary/10 p-2.5 text-primary sm:block">
+              <Video className="h-5 w-5" />
+            </div>
+            <div className="min-w-0">
+              <h1 className="truncate text-base font-semibold tracking-tight sm:text-lg">{session.title}</h1>
+              <p className="truncate text-xs text-muted-foreground">
+                {session.courses?.title || "Nexus Live Classroom"} <span aria-hidden="true">·</span>{" "}
+                {new Date(session.scheduled_at).toLocaleString()}
+              </p>
+            </div>
+            <Badge
+              variant={session.status === "live" ? "default" : "secondary"}
+              className="shrink-0 capitalize"
+            >
+              {session.status === "live" && <span className="mr-1.5 inline-flex h-1.5 w-1.5 animate-pulse rounded-full bg-white" />}
+              {session.status}
+            </Badge>
           </div>
-          <Badge variant={session.status === "live" ? "default" : "secondary"}>
-            {session.status}
-          </Badge>
+          <p className="hidden text-right text-xs text-muted-foreground md:block">
+            {isHost ? "You’re hosting this class" : "You’re attending this class"}
+          </p>
         </div>
 
         {isHost && session.status === "scheduled" && (
@@ -330,10 +341,10 @@ export default function LiveClassroomRoomPage() {
             Retry room shutdown
           </Button>
         )}
-      </div>
+      </header>
 
       {roomError && (
-        <p role="alert" className="mx-4 rounded-md bg-destructive/10 p-3 text-sm text-destructive lg:mx-8">
+        <p role="alert" className="mx-4 rounded-xl border border-destructive/20 bg-destructive/10 p-3 text-sm text-destructive lg:mx-8">
           {roomError}
         </p>
       )}
@@ -374,13 +385,13 @@ export default function LiveClassroomRoomPage() {
         </div>
       )}
       {session.status === "live" && waiting && (
-        <div role="status" className="mx-4 flex items-center gap-3 rounded-md bg-muted p-5 text-sm lg:mx-8">
+        <div role="status" className="mx-4 flex items-center gap-3 rounded-xl border bg-card p-5 text-sm shadow-sm lg:mx-8">
           <Loader2 className="h-5 w-5 animate-spin" />
           You are in the waiting room. The tutor will admit you shortly.
         </div>
       )}
       {session.status === "live" && !waiting && !credentials && !roomError && (
-        <div className="mx-4 rounded-md bg-muted p-5 text-sm lg:mx-8">
+        <div className="mx-4 rounded-xl border bg-card p-5 text-sm shadow-sm lg:mx-8">
           Connecting to the classroom…
         </div>
       )}
@@ -393,8 +404,8 @@ export default function LiveClassroomRoomPage() {
       )}
 
       {session.status === "live" && credentials && (
-        <div className="grid gap-4 px-4 pb-4 lg:grid-cols-[minmax(0,1fr)_280px] lg:px-8">
-          <div className="h-[calc(100vh-10rem)] min-h-[500px]">
+        <div className="grid gap-4 px-4 lg:grid-cols-[minmax(0,1fr)_300px] lg:px-8">
+          <div className="h-[min(74vh,900px)] min-h-[520px]">
             <LiveKitClassroom
               serverUrl={credentials.serverUrl}
               token={credentials.token}
@@ -405,13 +416,21 @@ export default function LiveClassroomRoomPage() {
             />
           </div>
           {isHost && (
-            <aside className="max-h-[calc(100vh-10rem)] space-y-3 overflow-y-auto rounded-xl border p-4">
-              <h2 className="font-semibold">Participants</h2>
+            <aside className="max-h-[min(74vh,900px)] space-y-4 overflow-y-auto rounded-2xl border bg-card p-4 shadow-sm">
+              <div className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Users className="h-4 w-4 text-primary" />
+                  <h2 className="font-semibold">Participants</h2>
+                </div>
+                <Badge variant="secondary">{participants.length}</Badge>
+              </div>
               {participants.length === 0 && (
-                <p className="text-sm text-muted-foreground">No participants yet.</p>
+                <p className="rounded-xl border border-dashed p-4 text-center text-sm text-muted-foreground">
+                  No participants yet.
+                </p>
               )}
               {participants.map((participant) => (
-                <div key={participant.user_id} className="space-y-2 border-b pb-3 last:border-0">
+                <div key={participant.user_id} className="space-y-3 rounded-xl border bg-background/70 p-3">
                   <div className="flex items-center justify-between gap-2">
                     <span className="truncate text-sm">{participant.name}</span>
                     <div className="flex shrink-0 gap-1">

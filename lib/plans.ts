@@ -146,6 +146,7 @@ export const PLAN_DEFINITIONS: PlanDefinition[] = [
       "Unlimited active courses",
       "Premium analytics dashboard",
       "Priority support",
+      "Verified badge on your course listings",
     ],
     featureFlags: {
       ...DEFAULT_FLAGS,
