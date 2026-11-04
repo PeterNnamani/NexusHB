@@ -58,6 +58,11 @@ interface SubscriptionInfo {
   role?: string
 }
 
+function toLocalDateTimeInputValue(date: Date) {
+  const localDate = new Date(date.getTime() - date.getTimezoneOffset() * 60_000)
+  return localDate.toISOString().slice(0, 16)
+}
+
 export default function LiveClassroomPage() {
   const { user } = useAuth()
   const router = useRouter()
@@ -112,6 +117,7 @@ export default function LiveClassroomPage() {
   const canHost = subInfo?.liveClassroom || user?.role === "admin"
   const canJoin = subInfo?.liveClassroomJoin || canHost
   const isStudent = subInfo?.role === "student" || user?.role === "student"
+  const minimumScheduledAt = toLocalDateTimeInputValue(new Date())
 
   const openScheduleDialog = async () => {
     setDialogOpen(true)
@@ -154,6 +160,21 @@ export default function LiveClassroomPage() {
       toast({ title: "Title, course and scheduled time are required", variant: "destructive" })
       return
     }
+    const scheduledAt = new Date(form.scheduledAt)
+    if (!Number.isFinite(scheduledAt.getTime()) || scheduledAt.getTime() <= Date.now()) {
+      toast({ title: "Scheduled time must be in the future", variant: "destructive" })
+      return
+    }
+    const durationMinutes = Number(form.durationMinutes)
+    if (!Number.isInteger(durationMinutes) || durationMinutes < 15 || durationMinutes > 240) {
+      toast({ title: "Duration must be between 15 and 240 minutes", variant: "destructive" })
+      return
+    }
+    const maxParticipants = Number(form.maxParticipants)
+    if (!Number.isInteger(maxParticipants) || maxParticipants < 2 || maxParticipants > 500) {
+      toast({ title: "Capacity must be between 2 and 500 participants", variant: "destructive" })
+      return
+    }
     setCreating(true)
     try {
       const res = await fetch("/api/live-sessions", {
@@ -164,9 +185,9 @@ export default function LiveClassroomPage() {
           description: form.description,
           courseId: form.courseId,
           lessonId: form.lessonId || undefined,
-          scheduledAt: new Date(form.scheduledAt).toISOString(),
-          durationMinutes: Number(form.durationMinutes) || 60,
-          maxParticipants: Number(form.maxParticipants) || 50,
+          scheduledAt: scheduledAt.toISOString(),
+          durationMinutes,
+          maxParticipants,
           waitingRoom: form.waitingRoom,
         }),
       })
@@ -306,6 +327,7 @@ export default function LiveClassroomPage() {
                 </p>
                 <Input
                   type="datetime-local"
+                  min={minimumScheduledAt}
                   value={form.scheduledAt}
                   onChange={(e) => setForm((f) => ({ ...f, scheduledAt: e.target.value }))}
                 />
@@ -316,6 +338,7 @@ export default function LiveClassroomPage() {
                       type="number"
                       min={15}
                       max={240}
+                      step={1}
                       value={form.durationMinutes}
                       onChange={(e) => setForm((f) => ({ ...f, durationMinutes: e.target.value }))}
                     />
@@ -326,6 +349,7 @@ export default function LiveClassroomPage() {
                       type="number"
                       min={2}
                       max={500}
+                      step={1}
                       value={form.maxParticipants}
                       onChange={(e) => setForm((f) => ({ ...f, maxParticipants: e.target.value }))}
                     />
