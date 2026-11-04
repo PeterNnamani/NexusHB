@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { Loader2 } from "lucide-react"
 import { useSiteView } from "@/contexts/site-view-context"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
@@ -15,6 +15,7 @@ import { normalizeRole } from "@/lib/admin"
 function DashboardLayoutInner() {
   const { isAuthenticated, isLoading, user } = useAuth()
   const { navigate } = useSiteView()
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const currentRole = normalizeRole(user?.role) as "student" | "tutor" | "admin"
 
   useEffect(() => {
@@ -38,9 +39,16 @@ function DashboardLayoutInner() {
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      <DashboardSidebar />
+      <DashboardSidebar
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
-        <DashboardHeader />
+        <DashboardHeader
+          mobileSidebarOpen={mobileSidebarOpen}
+          onMobileSidebarToggle={() => setMobileSidebarOpen((open) => !open)}
+          onMobileSidebarClose={() => setMobileSidebarOpen(false)}
+        />
         <div className="dashboard-header-offset" aria-hidden="true" />
         <main className="dashboard-main">
           <div className="w-full max-w-full">

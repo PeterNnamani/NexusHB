@@ -1,6 +1,6 @@
 "use client"
 
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { DashboardSidebar } from "@/components/dashboard/dashboard-sidebar"
 import { DashboardHeader } from "@/components/dashboard/dashboard-header"
@@ -17,6 +17,7 @@ export default function DashboardLayout({
 }) {
   const { isAuthenticated, isLoading, user } = useAuth()
   const router = useRouter()
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false)
   const currentRole = normalizeRole(user?.role) as "student" | "tutor" | "admin"
 
   useEffect(() => {
@@ -42,9 +43,16 @@ export default function DashboardLayout({
 
   return (
     <div className="min-h-screen flex bg-muted/30">
-      <DashboardSidebar />
+      <DashboardSidebar
+        mobileOpen={mobileSidebarOpen}
+        onMobileClose={() => setMobileSidebarOpen(false)}
+      />
       <div className="flex-1 flex flex-col min-h-screen lg:ml-64">
-        <DashboardHeader />
+        <DashboardHeader
+          mobileSidebarOpen={mobileSidebarOpen}
+          onMobileSidebarToggle={() => setMobileSidebarOpen((open) => !open)}
+          onMobileSidebarClose={() => setMobileSidebarOpen(false)}
+        />
         <div className="dashboard-header-offset" aria-hidden="true" />
         <main className="dashboard-main">
           <div className="w-full max-w-full">

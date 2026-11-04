@@ -80,7 +80,12 @@ const getNavConfig = (role: DashboardRole) => {
   }
 }
 
-export function DashboardSidebar() {
+interface DashboardSidebarProps {
+  mobileOpen: boolean
+  onMobileClose: () => void
+}
+
+export function DashboardSidebar({ mobileOpen, onMobileClose }: DashboardSidebarProps) {
   const { path, navigate } = useDashboardPath()
   const { navigate: siteNavigate } = useSiteView()
   const pathBase = dashboardPathBase(path)
@@ -104,6 +109,7 @@ export function DashboardSidebar() {
   }
 
   const go = (href: string) => {
+    onMobileClose()
     if (href === "/faq") {
       siteNavigate("faq")
       return
@@ -113,28 +119,45 @@ export function DashboardSidebar() {
 
   return (
     <>
+      {mobileOpen && (
+        <button
+          type="button"
+          aria-label="Close navigation menu"
+          className="fixed inset-0 z-40 bg-black/50 lg:hidden"
+          onClick={onMobileClose}
+        />
+      )}
       <aside
+        id="dashboard-sidebar"
         className={cn(
-          "fixed left-0 top-0 bottom-0 z-40 hidden lg:flex flex-col border-r border-white/5 bg-sidebar/95 backdrop-blur-xl transition-all duration-300",
-          isCollapsed ? "w-20" : "w-64",
+          "fixed left-0 top-0 bottom-0 z-50 flex flex-col border-r border-white/5 bg-sidebar/95 backdrop-blur-xl transition-all duration-300",
+          "w-72",
+          mobileOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0",
+          isCollapsed ? "lg:w-20" : "lg:w-64",
         )}
       >
         <div className="p-6 flex items-center justify-between">
-          <div className={cn("flex items-center", isCollapsed && "justify-center w-full")}>
+          <div className={cn("flex items-center", isCollapsed && !mobileOpen && "justify-center w-full")}>
             <NexusLogo
               href="/"
-              size={isCollapsed ? "sidebar-icon" : "sidebar"}
+              size={isCollapsed && !mobileOpen ? "sidebar-icon" : "sidebar"}
               className="max-w-full"
             />
           </div>
           {!isCollapsed && (
-            <Button variant="ghost" size="icon" onClick={() => setIsCollapsed(true)} className="h-8 w-8">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setIsCollapsed(true)}
+              className="hidden h-8 w-8 lg:inline-flex"
+              aria-label="Collapse sidebar"
+            >
               <ChevronLeft className="h-4 w-4" />
             </Button>
           )}
         </div>
 
-        {isCollapsed && (
+        {isCollapsed && !mobileOpen && (
           <Button
             variant="ghost"
             size="icon"
@@ -145,7 +168,7 @@ export function DashboardSidebar() {
           </Button>
         )}
 
-        {!isCollapsed && (
+        {(!isCollapsed || mobileOpen) && (
           <div className="px-4 pb-4">
             <div className="rounded-xl border border-border bg-muted/30 px-3 py-2">
               <p className="text-xs text-muted-foreground">Signed in as</p>
@@ -165,11 +188,11 @@ export function DashboardSidebar() {
                 isActive(item.href)
                   ? "bg-primary/15 font-medium text-foreground before:absolute before:left-0 before:top-1/2 before:h-6 before:w-[3px] before:-translate-y-1/2 before:rounded-full before:bg-emerald-400"
                   : "text-muted-foreground hover:text-foreground hover:bg-muted font-medium",
-                isCollapsed && "justify-center px-0",
+                isCollapsed && !mobileOpen && "justify-center px-0",
               )}
             >
               <item.icon className={cn("h-5 w-5 flex-shrink-0", isActive(item.href) && "text-emerald-800 dark:text-emerald-300")} />
-              {!isCollapsed && <span>{item.label}</span>}
+              {(!isCollapsed || mobileOpen) && <span>{item.label}</span>}
             </button>
           ))}
         </nav>
@@ -182,21 +205,21 @@ export function DashboardSidebar() {
               onClick={() => go(item.href)}
               className={cn(
                 "flex w-full items-center gap-3 rounded-xl px-3 py-3.5 text-base font-medium text-muted-foreground transition-all duration-150 ease-out hover:bg-muted hover:text-foreground",
-                isCollapsed && "justify-center px-0",
+                isCollapsed && !mobileOpen && "justify-center px-0",
               )}
             >
               <item.icon className="h-5 w-5 flex-shrink-0" />
-              {!isCollapsed && <span>{item.label}</span>}
+              {(!isCollapsed || mobileOpen) && <span>{item.label}</span>}
             </button>
           ))}
         </div>
 
-        {!isCollapsed && user?.role === "student" && (
+        {(!isCollapsed || mobileOpen) && user?.role === "student" && (
           <div className="px-3 py-2">
             <Button
               variant="default"
               className="w-full"
-              onClick={() => navigate("/dashboard/upgrade?view=tutor")}
+              onClick={() => go("/dashboard/upgrade?view=tutor")}
             >
               <Shield className="h-5 w-5 mr-2" />
               Upgrade to Tutor
@@ -205,7 +228,7 @@ export function DashboardSidebar() {
         )}
 
         <div className="p-4 border-t border-border">
-          <div className={cn("flex items-center gap-3", isCollapsed && "justify-center")}>
+          <div className={cn("flex items-center gap-3", isCollapsed && !mobileOpen && "justify-center")}>
             <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-emerald-300 via-emerald-500 to-emerald-800 p-0.5">
               {user?.avatar ? (
                 <img
@@ -219,14 +242,14 @@ export function DashboardSidebar() {
                 </div>
               )}
             </div>
-            {!isCollapsed && (
+            {(!isCollapsed || mobileOpen) && (
               <div className="flex-1 min-w-0">
                 <p className="font-semibold truncate">{user?.name || "Your account"}</p>
                 <p className="text-sm text-muted-foreground truncate">{roleLabel}</p>
               </div>
             )}
           </div>
-          {!isCollapsed && (
+          {(!isCollapsed || mobileOpen) && (
             <Button
               variant="ghost"
               onClick={() => void logout()}
@@ -239,7 +262,10 @@ export function DashboardSidebar() {
         </div>
       </aside>
 
-      <nav className="fixed bottom-0 left-0 right-0 z-40 lg:hidden glass-nav border-t border-border safe-area-pb">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 lg:hidden glass-nav border-t border-border safe-area-pb"
+        onClick={onMobileClose}
+      >
         <div className="flex items-center justify-around py-2">
           {mainNav.slice(0, 5).map((item) => (
             <button

@@ -39,7 +39,17 @@ function timeAgo(date: string) {
   return `${Math.floor(hours / 24)}d ago`
 }
 
-export function DashboardHeader() {
+interface DashboardHeaderProps {
+  mobileSidebarOpen: boolean
+  onMobileSidebarToggle: () => void
+  onMobileSidebarClose: () => void
+}
+
+export function DashboardHeader({
+  mobileSidebarOpen,
+  onMobileSidebarToggle,
+  onMobileSidebarClose,
+}: DashboardHeaderProps) {
   const [showSearch, setShowSearch] = useState(false)
   const { user, logout } = useAuth()
   const router = useRouter()
@@ -119,11 +129,27 @@ export function DashboardHeader() {
   }
 
   return (
-    <header className="dashboard-header fixed top-0 right-0 left-0 z-50 flex items-center justify-between gap-4 glass-nav px-4 backdrop-blur-xl lg:left-64 lg:px-8">
+    <header
+      className="dashboard-header fixed top-0 right-0 left-0 z-50 flex items-center justify-between gap-4 glass-nav px-4 backdrop-blur-xl lg:left-64 lg:px-8"
+      onClick={() => {
+        if (mobileSidebarOpen) onMobileSidebarClose()
+      }}
+    >
       {/* Mobile Menu */}
       <div className="lg:hidden">
-        <Button variant="ghost" size="icon" className="h-10 w-10">
-          <Menu className="h-5 w-5" />
+        <Button
+          variant="ghost"
+          size="icon"
+          className="h-10 w-10"
+          aria-label={mobileSidebarOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={mobileSidebarOpen}
+          aria-controls="dashboard-sidebar"
+          onClick={(event) => {
+            event.stopPropagation()
+            onMobileSidebarToggle()
+          }}
+        >
+          {mobileSidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
         </Button>
       </div>
 
