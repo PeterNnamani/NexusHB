@@ -78,10 +78,10 @@ export function AdminSidebar() {
         </button>
       </div>
 
-      <nav className="flex-1 px-2 py-3 overflow-y-auto">
+      <nav className="min-h-0 flex-1 px-2 py-1 overflow-hidden">
         {ADMIN_NAV_SECTIONS.map((section) => (
-          <div key={section.label} className="mb-4">
-            <p className="px-3 mb-1.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/40">
+          <div key={section.label} className="mb-1">
+            <p className="px-3 mb-0.5 text-[10px] font-semibold uppercase tracking-[0.18em] text-foreground/40">
               {section.label}
             </p>
             <div className="space-y-0.5">
@@ -95,7 +95,7 @@ export function AdminSidebar() {
                     onClick={() => navigate(item.id)}
                     className={cn(
                       "w-full",
-                      "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all",
+                      "flex items-center gap-2.5 px-3 py-0.5 rounded-lg text-[13px] font-medium transition-all",
                       active
                         ? "bg-foreground text-background"
                         : "text-foreground/70 hover:text-foreground hover:bg-muted",
