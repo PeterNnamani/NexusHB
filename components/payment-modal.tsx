@@ -98,6 +98,8 @@ export function PaymentModal({ isOpen, onClose, course, onSuccess }: PaymentModa
         throw new Error(init.error || "Payment initialization failed")
       }
 
+      onClose()
+
       await openPaystackCheckout({
         email: checkoutEmail,
         amount: course.price,
